@@ -1,0 +1,121 @@
+/* --- GLOBAL FIX FOR NAV COVERING SECTION TITLES --- */
+section {
+    scroll-margin-top: 90px; /* Prevents the sticky navbar from covering titles when jumping to sections */
+}
+
+/* --- COLOR VARIABLES & PALETTES --- */
+:root {
+    --custom-green: #2ecc71;
+    --custom-green-hover: #27ae60;
+}
+
+[data-bs-theme="light"] {
+    --custom-green: #198754;
+    --custom-green-hover: #146c43;
+}
+
+/* --- LOGO AUTOMATIC INVERSION --- */
+/* Inverts the black PNG to crisp white in dark mode, keeps it black in light mode */
+[data-bs-theme="dark"] .brand-logo {
+    filter: invert(1);
+    transition: filter 0.3s ease;
+}
+
+[data-bs-theme="light"] .brand-logo {
+    filter: invert(0);
+    transition: filter 0.3s ease;
+}
+
+/* --- HIGH CONTRAST TYPOGRAPHY --- */
+.high-contrast-text {
+    color: var(--bs-body-color) !important;
+    font-weight: 600;
+}
+
+.text-green {
+    color: var(--custom-green) !important;
+}
+
+/* --- BUTTON INTERACTIONS & TRANSITIONS --- */
+.btn-green {
+    background-color: var(--custom-green);
+    color: #ffffff;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-green:hover {
+    background-color: var(--custom-green-hover);
+    color: #ffffff;
+    transform: translateY(-2px); /* Seamless bounce effect on hover */
+}
+
+.btn-outline-green {
+    border: 2px solid var(--custom-green);
+    color: var(--custom-green);
+    background-color: transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-green:hover {
+    background-color: var(--custom-green);
+    color: #ffffff;
+    transform: translateY(-2px); /* Synced with primary button animation */
+}
+
+/* --- INTERACTIVE REPO CARDS --- */
+.project-card {
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--custom-green) !important;
+}
+
+/* --- SECTION DECORATIVE BORDERS --- */
+.section-title {
+    position: relative;
+    padding-bottom: 15px;
+    margin-bottom: 40px;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 60px;
+    height: 3px;
+    background-color: var(--custom-green);
+    border-radius: 2px;
+}
+
+/* --- BADGES & LIST LAYOUTS --- */
+.tech-tag {
+    background-color: rgba(46, 204, 113, 0.1);
+    color: var(--custom-green);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+[data-bs-theme="light"] .tech-tag {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.skill-list li {
+    margin-bottom: 10px;
+}
+
+/* --- FEATURED PROJECT BOX --- */
+.deep-dive-box {
+    border-left: 4px solid var(--custom-green);
+    padding-left: 20px;
+    background-color: rgba(46, 204, 113, 0.05);
+    padding: 20px;
+    border-radius: 0 8px 8px 0;
+}
