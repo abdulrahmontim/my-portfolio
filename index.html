@@ -24,10 +24,8 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-lg-center gap-3 pt-3 pt-lg-0">
-                    <li class="nav-item"><a class="nav-link fw-medium high-contrast-text" href="#projects">Projects</a></li>
                     <li class="nav-item"><a class="nav-link fw-medium high-contrast-text" href="#skills">Skills</a></li>
-                    <li class="nav-item"><a class="nav-link fw-medium high-contrast-text" href="#deep-dive">Deep Dive</a></li>
-                    <li class="nav-item"><a class="nav-link fw-medium high-contrast-text" href="#reflection">Reflection</a></li>
+                    <li class="nav-item"><a class="nav-link fw-medium high-contrast-text" href="#projects">Projects</a></li>
                     <li class="nav-item"><a class="nav-link fw-medium high-contrast-text" href="#contact">Contact</a></li>
                     <li class="nav-item ms-lg-2">
                         <button class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" id="themeToggle" style="width: 40px; height: 40px;" aria-label="Toggle Theme">
@@ -50,62 +48,139 @@
     </nav>
 
     <div class="container">
+        <!-- HERO SECTION -->
         <section class="py-5 my-4 border-bottom">
             <div class="row align-items-center">
                 <div class="col-lg-9">
                     <h1 class="display-4 fw-bold high-contrast-text mb-2">Abdulrahmon Sulaimon</h1>
                     <h2 class="h3 fw-bold text-green mb-3">Backend Software Engineer</h2>
-                    <p class="fs-5 high-contrast-text mb-2">
-                        <strong>Location:</strong> Lagos, Nigeria (GMT+1)
+                    
+                    <p class="fs-5 high-contrast-text mb-4" style="max-width: 800px; line-height: 1.6;">
+                        I'm a Computer Engineering student with a background that started before university, in electronics, and now shows up in my engineering philosophy: I care about what happens when things go wrong, not just when they work.<br><br>
+                        I build scalable, production-grade backend systems specializing in Python, FastAPI, Django.
                     </p>
-                    <p class="fs-5 high-contrast-text mb-4" style="max-width: 700px;">
-                        I am a backend engineer focused on building resilient APIs, handling background processing, and structuring robust database architectures. I specialize in Python-based frameworks (Django/FastAPI) to deliver scalable, production-ready systems.
-                    </p>
-                    <div class="d-flex gap-3">
-                        <a href="#contact" class="btn btn-green fw-bold px-4 py-2">Contact Me</a>
-                        <a href="https://github.com/abdulrahmontim" target="_blank" class="btn btn-outline-green fw-bold px-4 py-2">GitHub Profile</a>
+                    
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="mailto:abdulrahmonsulaimon60@gmail.com" class="btn btn-green fw-bold px-4 py-2">Email Me</a>
+                        <a href="https://github.com/abdulrahmontim" target="_blank" class="btn btn-outline-green fw-bold px-4 py-2">GitHub</a>
+                        <a href="https://www.linkedin.com/in/abdulrahmon-sulaimon" target="_blank" class="btn btn-outline-green fw-bold px-4 py-2">LinkedIn</a>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="projects" class="py-5">
-            <h2 class="fw-bold section-title high-contrast-text">Selected Projects</h2>
+        <!-- SKILLS SECTION -->
+        <section id="skills" class="py-5">
+            <h2 class="fw-bold section-title high-contrast-text mb-4">Core Technologies & Skills</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="p-4 border rounded h-100 bg-body-tertiary">
+                        <h4 class="fw-bold text-green mb-3">Languages & Frameworks</h4>
+                        <ul class="list-unstyled high-contrast-text fs-5 mb-0">
+                            <li class="mb-2">▹ Python (FastAPI, Django)</li>
+                            <li class="mb-2">▹ C/C++</li>
+                            <li class="mb-2">▹ SQL</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 border rounded h-100 bg-body-tertiary">
+                        <h4 class="fw-bold text-green mb-3">Data & Infrastructure</h4>
+                        <ul class="list-unstyled high-contrast-text fs-5 mb-0">
+                            <li class="mb-2">▹ PostgreSQL & SQLite</li>
+                            <li class="mb-2">▹ Redis</li>
+                            <li class="mb-2">▹ Linux & Deployments</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 border rounded h-100 bg-body-tertiary">
+                        <h4 class="fw-bold text-green mb-3">Architecture & Concepts</h4>
+                        <ul class="list-unstyled high-contrast-text fs-5 mb-0">
+                            <li class="mb-2">▹ REST API Design</li>
+                            <li class="mb-2">▹ OAuth (PKCE) & JWT</li>
+                            <li class="mb-2">▹ Async Workers & Retries</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROJECTS SECTION -->
+        <section id="projects" class="py-5 border-top">
+            <h2 class="fw-bold section-title high-contrast-text mb-4">Selected Engineering Work</h2>
             
             <div class="row g-4">
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card project-card bg-body-tertiary border">
+                <!-- Project 1: MeetMind -->
+                <div class="col-12 col-lg-6">
+                    <div class="card project-card bg-body-tertiary border h-100">
                         <div class="card-body d-flex flex-column p-4">
-                            <h3 class="h4 fw-bold card-title high-contrast-text mb-2">Profile Intelligence Ecosystem</h3>
+                            <h3 class="h4 fw-bold card-title high-contrast-text mb-1">MeetMind AI Assistant</h3>
+                            <p class="text-green fw-bold mb-3" style="font-size: 0.9rem;">HNG Tech Internship Team Project</p>
+                            
                             <div class="d-flex gap-3 mb-3">
-                                <a href="https://github.com/abdulrahmontim/profile-intelligence-api" target="_blank" class="text-green fw-bold text-decoration-none">GitHub Repo &rarr;</a>
-                                <a href="https://your-deployed-api.vercel.app" target="_blank" class="text-green fw-bold text-decoration-none">Live Demo &nearr;</a>
+                                <a href="https://github.com/hngprojects/meetmind-api" target="_blank" class="text-green fw-bold text-decoration-none">GitHub Repo &rarr;</a>
                             </div>
                             
-                            <p class="card-text high-contrast-text mb-2"><strong>Description:</strong> A comprehensive system providing structured profile data via REST endpoints, consumed by a custom CLI and Web interface.</p>
-                            <p class="card-text high-contrast-text mb-3"><strong>My Contribution:</strong> I architected the core Django API, implemented secure JWT authentication flows, managed the PostgreSQL database schemas, and handled the initial platform deployment via Railway.</p>
+                            <p class="card-text high-contrast-text mb-3">Collaborated on a real codebase under strict deadlines to build an AI-driven interview platform. My core contributions included:</p>
+                            <ul class="card-text high-contrast-text mb-4">
+                                <li>Wiring up the AI service with multi-LLM fallback logic to prevent system crashes during model outages.</li>
+                                <li>Developing the notification system, chat query, and summary generation logic.</li>
+                                <li>Contributing to real-time audio/video integration (LiveKit) and GitHub OAuth flows.</li>
+                            </ul>
                             
                             <div class="d-flex flex-wrap gap-2 mt-auto">
-                                <span class="tech-tag">Django</span>
-                                <span class="tech-tag">PostgreSQL</span>
-                                <span class="tech-tag">JWT</span>
-                                <span class="tech-tag">Railway</span>
+                                <span class="tech-tag">FastAPI</span>
+                                <span class="tech-tag">LiveKit</span>
+                                <span class="tech-tag">OAuth/PKCE</span>
+                                <span class="tech-tag">LLMs</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card project-card bg-body-tertiary border">
+                <!-- Project 2: Background Job Scheduler -->
+                <div class="col-12 col-lg-6">
+                    <div class="card project-card bg-body-tertiary border h-100">
                         <div class="card-body d-flex flex-column p-4">
-                            <h3 class="h4 fw-bold card-title high-contrast-text mb-2">Async HTTP Retry Engine</h3>
+                            <h3 class="h4 fw-bold card-title high-contrast-text mb-1">Background Job Scheduler</h3>
+                            
                             <div class="d-flex gap-3 mb-3">
-                                <a href="https://github.com/abdulrahmontim/retry_engine" target="_blank" class="text-green fw-bold text-decoration-none">GitHub Repo &rarr;</a>
-                                <a href="https://your-deployed-api.vercel.app" target="_blank" class="text-green fw-bold text-decoration-none">Live Demo &nearr;</a>
+                                <a href="https://github.com/abdulrahmontim/background_job_scheduler" target="_blank" class="text-green fw-bold text-decoration-none">GitHub Repo &rarr;</a>
                             </div>
                             
-                            <p class="card-text high-contrast-text mb-2"><strong>Description:</strong> A background worker service designed to ensure resilient network requests by handling temporary API failures automatically.</p>
-                            <p class="card-text high-contrast-text mb-3"><strong>My Contribution:</strong> I built the asynchronous logic utilizing FastAPI and AsyncIO. I implemented an exponential backoff algorithm with randomized jitter to prevent thundering herd problems, tracking task states persistently in SQLite.</p>
+                            <p class="card-text high-contrast-text mb-3">A custom background job scheduling system designed to offload heavy processing tasks from the main application thread.</p>
+                            <ul class="card-text high-contrast-text mb-4">
+                                <li>Architected a robust queueing mechanism for asynchronous task execution.</li>
+                                <li>Implemented state management to track pending, completed, and failed jobs.</li>
+                                <li>Ensured non-blocking operations to maintain high API throughput.</li>
+                            </ul>
+                            
+                            <div class="d-flex flex-wrap gap-2 mt-auto">
+                                <span class="tech-tag">Python</span>
+                                <span class="tech-tag">AsyncIO</span>
+                                <span class="tech-tag">Task Queues</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 3: Async HTTP Retry Engine -->
+                <div class="col-12 col-lg-6">
+                    <div class="card project-card bg-body-tertiary border h-100">
+                        <div class="card-body d-flex flex-column p-4">
+                            <h3 class="h4 fw-bold card-title high-contrast-text mb-1">Async HTTP Retry Engine</h3>
+                            
+                            <div class="d-flex gap-3 mb-3">
+                                <a href="https://github.com/abdulrahmontim/retry_engine" target="_blank" class="text-green fw-bold text-decoration-none">GitHub Repo &rarr;</a>
+                            </div>
+                            
+                            <p class="card-text high-contrast-text mb-3">A background worker service designed to ensure resilient network requests by handling temporary API failures gracefully.</p>
+                            <ul class="card-text high-contrast-text mb-4">
+                                <li>Developed an exponential backoff algorithm to space out retries.</li>
+                                <li>Integrated randomized jitter to prevent thundering herd problems on target servers.</li>
+                                <li>Tracked task states persistently using SQLite for fault tolerance.</li>
+                            </ul>
                             
                             <div class="d-flex flex-wrap gap-2 mt-auto">
                                 <span class="tech-tag">FastAPI</span>
@@ -116,21 +191,27 @@
                     </div>
                 </div>
 
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card project-card bg-body-tertiary border">
+                <!-- Project 4: Profile Intelligence API -->
+                <div class="col-12 col-lg-6">
+                    <div class="card project-card bg-body-tertiary border h-100">
                         <div class="card-body d-flex flex-column p-4">
-                            <h3 class="h4 fw-bold card-title high-contrast-text mb-2">Gender API</h3>
+                            <h3 class="h4 fw-bold card-title high-contrast-text mb-1">Profile Intelligence Platform</h3>
+                            
                             <div class="d-flex gap-3 mb-3">
-                                <a href="https://github.com/abdulrahmontim/gender_api" target="_blank" class="text-green fw-bold text-decoration-none">GitHub Repo &rarr;</a>
-                                <a href="https://your-deployed-api.vercel.app" target="_blank" class="text-green fw-bold text-decoration-none">Live Demo &nearr;</a>
+                                <a href="https://github.com/abdulrahmontim/profile-intelligence-api" target="_blank" class="text-green fw-bold text-decoration-none">GitHub Repo &rarr;</a>
                             </div>
                             
-                            <p class="card-text high-contrast-text mb-2"><strong>Description:</strong> A programmatic endpoint designed to process incoming queries and return structured, dynamically generated demographic data.</p>
-                            <p class="card-text high-contrast-text mb-3"><strong>My Contribution:</strong> Designed the request/response flow, handled data parsing logic, and ensured the endpoint met strict response-time requirements for integration into larger services.</p>
+                            <p class="card-text high-contrast-text mb-3">A unified Django backend serving a REST API, CLI tool, and web app for structured profile data management.</p>
+                            <ul class="card-text high-contrast-text mb-4">
+                                <li>Architected the core API layer handling data ingestion and querying.</li>
+                                <li>Designed relational database schemas using PostgreSQL.</li>
+                                <li>Secured endpoints using strict JWT authentication and role-based access control.</li>
+                            </ul>
                             
                             <div class="d-flex flex-wrap gap-2 mt-auto">
-                                <span class="tech-tag">Python</span>
-                                <span class="tech-tag">API Design</span>
+                                <span class="tech-tag">Django</span>
+                                <span class="tech-tag">PostgreSQL</span>
+                                <span class="tech-tag">JWT</span>
                             </div>
                         </div>
                     </div>
@@ -138,59 +219,8 @@
             </div>
         </section>
 
-        <section id="skills" class="py-5 border-top">
-            <h2 class="fw-bold section-title high-contrast-text">Demonstrated Backend Skills</h2>
-            <div class="row">
-                <div class="col-md-10">
-                    <ul class="fs-5 high-contrast-text skill-list">
-                        <li><strong>API Design & Routing:</strong> Designed clear, RESTful endpoints and request/response structures. <em>(Demonstrated in: Profile Intelligence API & Gender API)</em></li>
-                        <li><strong>Authentication & Security:</strong> Implemented secure token-based authentication flows to protect sensitive endpoints. <em>(Demonstrated in: Profile Intelligence API via JWT)</em></li>
-                        <li><strong>Background Jobs & Resilience:</strong> Handled asynchronous task execution and implemented complex retry logic (exponential backoff + jitter) to manage network unreliability. <em>(Demonstrated in: Async HTTP Retry Engine)</em></li>
-                        <li><strong>Database Management:</strong> Designed relational schemas and managed data persistence across different engines depending on project scope. <em>(Demonstrated in: PostgreSQL for Profile Intelligence, SQLite for Retry Engine)</em></li>
-                        <li><strong>Deployment & Infrastructure:</strong> Transitioned services from local development to cloud platforms, dealing with environment variables and platform-specific configurations. <em>(Demonstrated in: Railway deployments, IBM LinuxONE setup)</em></li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <section id="deep-dive" class="py-5 border-top">
-            <h2 class="fw-bold section-title high-contrast-text">Featured Deep Dive: Async HTTP Retry Engine</h2>
-            
-            <div class="deep-dive-box">
-                <h3 class="h4 fw-bold text-green mb-3">The Problem</h3>
-                <p class="high-contrast-text fs-5 mb-4">When integrating with third-party APIs, network timeouts and temporary server errors are inevitable. Immediately retrying a failed request often fails again or overwhelms the target server. I needed a system that could intelligently delay and retry requests in the background without blocking the main application flow.</p>
-                
-                <h3 class="h4 fw-bold text-green mb-3">Architecture & Request Flow</h3>
-                <p class="high-contrast-text fs-5 mb-4">The service is built on <strong>FastAPI</strong> using Python's <strong>AsyncIO</strong>. When a request fails, it isn't dropped; it is logged to an <strong>SQLite</strong> database with a "pending" state. A background worker continuously polls this database. Instead of a fixed delay, the worker calculates the next retry time using <strong>exponential backoff</strong> (delays get progressively longer) combined with <strong>randomized jitter</strong> (adding a random time variance to prevent multiple failed requests from synchronizing and hitting the target API at the exact same millisecond).</p>
-                
-                <h3 class="h4 fw-bold text-green mb-3">Technical Challenge & Solution</h3>
-                <p class="high-contrast-text fs-5 mb-0"><strong>Challenge:</strong> Implementing the jitter logic asynchronously without blocking the event loop or causing race conditions in the database state updates. <br><strong>Solution:</strong> I isolated the delay calculation into a pure, testable mathematical function. For execution, I utilized `asyncio.sleep()` for the jitter delay, ensuring the worker thread remained non-blocking and could handle other incoming requests concurrently while waiting to execute the retry.</p>
-            </div>
-        </section>
-
-        <section id="reflection" class="py-5 border-top">
-            <h2 class="fw-bold section-title high-contrast-text">Learning Reflection</h2>
-            <div class="row">
-                <div class="col-md-10">
-                    <p class="fs-5 high-contrast-text">
-                        The most significant lesson I learned was the harsh reality of deployment and infrastructure. Building a perfectly functioning API locally is only 50% of the job. I learned firsthand the challenges of platform limitations when my Railway trial expired, which forced me to understand the underlying infrastructure better—transitioning toward raw Linux server management (IBM LinuxONE) and grappling with WSGI vs. ASGI server limitations. I became a much stronger engineer by learning how to configure the actual environments where my code runs, rather than just writing the code itself.
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        <section id="contact" class="py-5 border-top text-center my-4 mx-auto" style="max-width: 600px;">
-            <h2 class="fw-bold high-contrast-text mb-3">Get In Touch</h2>
-            <p class="high-contrast-text fs-5 mb-4">
-                I am currently looking for backend engineering opportunities. Feel free to reach out via email or connect with me on GitHub.
-            </p>
-            <div class="d-flex justify-content-center gap-3">
-                <a href="mailto:abdulrahmonsulaimon60@gmail.com" class="btn btn-lg btn-green fw-bold px-4">Email Me</a>
-                <a href="https://github.com/abdulrahmontim" target="_blank" class="btn btn-lg btn-outline-green fw-bold px-4">GitHub</a>
-            </div>
-        </section>
-
-        <footer class="py-4 border-top text-center high-contrast-text">
+        <!-- FOOTER -->
+        <footer class="py-4 mt-2 border-top text-center high-contrast-text">
             <p class="mb-0 fw-medium">&copy; 2026 Abdulrahmon Sulaimon. All rights reserved.</p>
         </footer>
     </div>
