@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllPosts, getPost } from "@/lib/content";
 import CategoryBadge from "@/components/CategoryBadge";
-import { mdxComponents } from "@/components/mdx-components";
+import { mdxComponents, mdxRemoteOptions } from "@/components/mdx-components";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -12,6 +12,9 @@ interface PageProps {
 
 export async function generateStaticParams() {
   const posts = getAllPosts();
+  if (posts.length === 0) {
+    return [{ slug: "_empty" }];
+  }
   return posts.map((post) => ({
     slug: post.slug,
   }));
@@ -114,7 +117,7 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       {/* MDX Content Body */}
       <div className="prose dark:prose-invert max-w-none">
-        <MDXRemote source={content} components={mdxComponents} />
+        <MDXRemote source={content} components={mdxComponents} options={mdxRemoteOptions} />
       </div>
     </article>
   );

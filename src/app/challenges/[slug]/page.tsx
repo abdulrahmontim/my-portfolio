@@ -5,7 +5,7 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllChallenges, getChallenge } from "@/lib/content";
 import CategoryBadge from "@/components/CategoryBadge";
 import StatusBadge from "@/components/StatusBadge";
-import { mdxComponents } from "@/components/mdx-components";
+import { mdxComponents, mdxRemoteOptions, getYouTubeId, YouTube } from "@/components/mdx-components";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -13,6 +13,9 @@ interface PageProps {
 
 export async function generateStaticParams() {
   const challenges = getAllChallenges();
+  if (challenges.length === 0) {
+    return [{ slug: "_empty" }];
+  }
   return challenges.map((challenge) => ({
     slug: challenge.slug,
   }));
@@ -105,20 +108,33 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
         </p>
       </div>
 
-      {/* Optional Video Link */}
-      {frontmatter.video && (
-        <div className="mb-8 p-4 rounded-lg border border-[var(--bs-border-color,#374151)] bg-body-tertiary flex items-center justify-between">
-          <span className="text-sm font-semibold">Video Demonstration:</span>
-          <a
-            href={frontmatter.video}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-bold text-[var(--custom-green)] hover:underline"
-          >
-            Watch Video &rarr;
-          </a>
-        </div>
-      )}
+      {/* Optional Video Link / YouTube Embed */}
+      {frontmatter.video && (() => {
+        const ytId = getYouTubeId(frontmatter.video);
+        if (ytId) {
+          return (
+            <div className="mb-8">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--custom-green)] block mb-2">
+                Video Demonstration
+              </span>
+              <YouTube id={ytId} />
+            </div>
+          );
+        }
+        return (
+          <div className="mb-8 p-4 rounded-lg border border-[var(--bs-border-color,#374151)] bg-body-tertiary flex items-center justify-between">
+            <span className="text-sm font-semibold">Video Demonstration:</span>
+            <a
+              href={frontmatter.video}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-bold text-[var(--custom-green)] hover:underline"
+            >
+              Watch Video &rarr;
+            </a>
+          </div>
+        );
+      })()}
 
       {/* Cross-link box if it has a writeup */}
       {resolvedWriteup && (
@@ -140,7 +156,7 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
 
       {/* MDX Content Body */}
       <div className="prose dark:prose-invert max-w-none">
-        <MDXRemote source={content} components={mdxComponents} />
+        <MDXRemote source={content} components={mdxComponents} options={mdxRemoteOptions} />
       </div>
     </article>
   );
