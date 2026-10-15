@@ -20,6 +20,15 @@ export default function Footer() {
               </a>
             </span>
           ))}
+          <span className="opacity-50">&bull;</span>
+          <a
+            href="/rss.xml"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-green text-decoration-none fw-medium"
+          >
+            RSS
+          </a>
         </div>
       </div>
     </footer>
