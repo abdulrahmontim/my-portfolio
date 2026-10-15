@@ -8,7 +8,9 @@ import Contact from "@/components/home/Contact";
 import { siteConfig, SOCIAL_LINKS, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: siteConfig.title,
+  title: {
+    absolute: siteConfig.title,
+  },
   description: siteConfig.description,
   alternates: {
     canonical: SITE_URL,

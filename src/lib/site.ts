@@ -3,9 +3,9 @@ export const SITE_URL = rawSiteUrl.replace(/\/+$/, "");
 
 export const siteConfig = {
   name: "Abdulrahmon Sulaimon",
-  title: "Abdulrahmon Sulaimon | Backend Engineer",
+  title: "Abdulrahmon Sulaimon | Backend Software Engineer (Python, FastAPI, Django)",
   description:
-    "I'm a Computer Engineering student with a background in electronics building scalable, production-grade backend systems specializing in Python, FastAPI, Django.",
+    "Abdulrahmon Sulaimon is a Backend Software Engineer specializing in Python, FastAPI, and Django, building scalable systems with an electronics background.",
   url: SITE_URL,
   links: {
     github: "https://github.com/abdulrahmontim",

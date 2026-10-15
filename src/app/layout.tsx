@@ -6,6 +6,19 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { siteConfig, SITE_URL } from "@/lib/site";
 
+const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
+
+const verification: Metadata["verification"] = {};
+if (googleVerification) {
+  verification.google = googleVerification;
+}
+if (bingVerification) {
+  verification.other = {
+    "msvalidate.01": bingVerification,
+  };
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -34,6 +47,7 @@ export const metadata: Metadata = {
     title: siteConfig.title,
     description: siteConfig.description,
   },
+  ...(Object.keys(verification).length > 0 ? { verification } : {}),
 };
 
 export default function RootLayout({
@@ -52,8 +66,10 @@ export default function RootLayout({
       </head>
       <body>
         <Header />
-        <div className="container">
+        <main className="container" id="main-content">
           {children}
+        </main>
+        <div className="container">
           <Footer />
         </div>
         <Analytics />

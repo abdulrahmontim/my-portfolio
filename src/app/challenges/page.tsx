@@ -4,7 +4,7 @@ import ChallengeList from "@/components/ChallengeList";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Challenges | Abdulrahmon Sulaimon",
+  title: "Challenges",
   description:
     "Self-set learn-and-build engineering projects across electronics, embedded systems, and software.",
   alternates: {

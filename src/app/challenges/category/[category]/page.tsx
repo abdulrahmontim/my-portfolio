@@ -27,25 +27,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
   const categoryKey = category as CategoryKey;
   const label = CATEGORIES[categoryKey];
-  const title = `${label} - Challenges | Abdulrahmon Sulaimon`;
+  const docTitle = `${label} Challenges`;
+  const ogTitle = `${label} Challenges | Abdulrahmon Sulaimon`;
   const description = `Engineering challenges on ${label} by Abdulrahmon Sulaimon.`;
   const url = `${SITE_URL}/challenges/category/${category}`;
 
   return {
-    title,
+    title: docTitle,
     description,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title,
+      title: ogTitle,
       description,
       url,
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: ogTitle,
       description,
     },
   };

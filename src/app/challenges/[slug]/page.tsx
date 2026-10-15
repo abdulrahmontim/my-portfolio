@@ -32,25 +32,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const title = `Week ${challenge.frontmatter.week}: ${challenge.frontmatter.title} | Abdulrahmon Sulaimon`;
-  const description = challenge.frontmatter.summary;
+  const docTitle = `Week ${challenge.frontmatter.week}: ${challenge.frontmatter.title}`;
+  const ogTitle = `${docTitle} | Abdulrahmon Sulaimon`;
+  const description =
+    challenge.frontmatter.summary.length > 155
+      ? `${challenge.frontmatter.summary.slice(0, 152)}...`
+      : challenge.frontmatter.summary;
   const url = `${SITE_URL}/challenges/${challenge.slug}`;
 
   return {
-    title,
+    title: docTitle,
     description,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title,
+      title: ogTitle,
       description,
       url,
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: ogTitle,
       description,
     },
   };

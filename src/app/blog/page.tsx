@@ -4,7 +4,7 @@ import BlogList from "@/components/BlogList";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Blog | Abdulrahmon Sulaimon",
+  title: "Blog",
   description:
     "Writing on electronics, software architecture, backend engineering, psychology, and learning in public.",
   alternates: {

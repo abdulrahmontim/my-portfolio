@@ -32,18 +32,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const title = `${post.frontmatter.title} | Abdulrahmon Sulaimon`;
-  const description = post.frontmatter.summary;
+  const docTitle = post.frontmatter.title;
+  const ogTitle = `${post.frontmatter.title} | Abdulrahmon Sulaimon`;
+  const description =
+    post.frontmatter.summary.length > 155
+      ? `${post.frontmatter.summary.slice(0, 152)}...`
+      : post.frontmatter.summary;
   const url = `${SITE_URL}/blog/${post.slug}`;
 
   return {
-    title,
+    title: docTitle,
     description,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title,
+      title: ogTitle,
       description,
       url,
       type: "article",
@@ -52,7 +56,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: ogTitle,
       description,
     },
   };
