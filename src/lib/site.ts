@@ -10,3 +10,14 @@ export const siteConfig = {
     email: "mailto:abdulrahmonsulaimon60@gmail.com",
   },
 };
+
+export const CATEGORIES = {
+  electronics: "Electronics",
+  embedded: "Embedded",
+  software: "Software",
+  psychology: "Psychology",
+  career: "Career & Learning",
+  other: "Other",
+} as const;
+
+export type CategoryKey = keyof typeof CATEGORIES;
