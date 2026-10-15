@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PostItem } from "@/lib/content";
+import { calculateReadingTime } from "@/lib/reading-time";
 import CategoryBadge from "./CategoryBadge";
 
 interface PostCardProps {
@@ -7,7 +8,8 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post }: PostCardProps) {
-  const { slug, frontmatter, resolvedChallenge } = post;
+  const { slug, frontmatter, content, resolvedChallenge } = post;
+  const readingTime = calculateReadingTime(content);
   const formattedDate = new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -17,13 +19,14 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <article className="border border-[var(--bs-border-color,#374151)] rounded-lg p-6 bg-body-tertiary hover:border-[var(--custom-green)] transition-all duration-300 flex flex-col h-full group">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <time
-          dateTime={frontmatter.publishedAt.toISOString()}
-          className="text-xs opacity-75 font-mono"
-        >
-          {formattedDate}
-        </time>
-        <CategoryBadge category={frontmatter.category} />
+        <div className="flex items-center gap-1.5 text-xs opacity-75 font-mono">
+          <time dateTime={frontmatter.publishedAt.toISOString()}>
+            {formattedDate}
+          </time>
+          <span>&bull;</span>
+          <span>{readingTime} min read</span>
+        </div>
+        <CategoryBadge category={frontmatter.category} section="blog" />
       </div>
 
       <h3 className="text-xl font-bold mb-2 group-hover:text-[var(--custom-green)] transition-colors">

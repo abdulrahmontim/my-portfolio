@@ -1,11 +1,28 @@
 import type { Metadata } from "next";
 import { getAllChallenges } from "@/lib/content";
 import ChallengeList from "@/components/ChallengeList";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Challenges | Abdulrahmon Sulaimon",
   description:
     "Self-set learn-and-build engineering projects across electronics, embedded systems, and software.",
+  alternates: {
+    canonical: `${SITE_URL}/challenges`,
+  },
+  openGraph: {
+    title: "Challenges | Abdulrahmon Sulaimon",
+    description:
+      "Self-set learn-and-build engineering projects across electronics, embedded systems, and software.",
+    url: `${SITE_URL}/challenges`,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Challenges | Abdulrahmon Sulaimon",
+    description:
+      "Self-set learn-and-build engineering projects across electronics, embedded systems, and software.",
+  },
 };
 
 export default function ChallengesPage() {

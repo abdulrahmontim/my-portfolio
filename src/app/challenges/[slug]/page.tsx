@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import { getAllChallenges, getChallenge } from "@/lib/content";
+import { getAdjacentChallenges, getAllChallenges, getChallenge } from "@/lib/content";
+import { SITE_URL } from "@/lib/site";
 import CategoryBadge from "@/components/CategoryBadge";
 import StatusBadge from "@/components/StatusBadge";
 import { mdxComponents, mdxRemoteOptions, getYouTubeId, YouTube } from "@/components/mdx-components";
@@ -31,9 +32,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const title = `Week ${challenge.frontmatter.week}: ${challenge.frontmatter.title} | Abdulrahmon Sulaimon`;
+  const description = challenge.frontmatter.summary;
+  const url = `${SITE_URL}/challenges/${challenge.slug}`;
+
   return {
-    title: `Week ${challenge.frontmatter.week}: ${challenge.frontmatter.title} | Abdulrahmon Sulaimon`,
-    description: challenge.frontmatter.summary,
+    title,
+    description,
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 
@@ -46,6 +65,7 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
   }
 
   const { frontmatter, content, resolvedWriteup } = challenge;
+  const { prev, next } = getAdjacentChallenges(slug);
 
   return (
     <article className="py-8 sm:py-12 max-w-3xl mx-auto">
@@ -67,7 +87,7 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
           </span>
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={frontmatter.status} />
-            <CategoryBadge category={frontmatter.category} />
+            <CategoryBadge category={frontmatter.category} section="challenges" />
             <span className="text-xs px-2.5 py-0.5 rounded-full border border-[var(--bs-border-color,#374151)] opacity-75 capitalize">
               Difficulty: {frontmatter.difficulty}
             </span>
@@ -158,6 +178,42 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
       <div className="prose dark:prose-invert max-w-none">
         <MDXRemote source={content} components={mdxComponents} options={mdxRemoteOptions} />
       </div>
+
+      {/* Previous / Next Navigation */}
+      {(prev || next) && (
+        <nav className="mt-12 pt-8 border-t border-[var(--bs-border-color,#374151)] flex flex-wrap items-center justify-between gap-4">
+          {prev ? (
+            <Link
+              href={`/challenges/${prev.slug}`}
+              className="group flex flex-col text-left max-w-[45%] text-decoration-none no-underline"
+            >
+              <span className="text-xs uppercase tracking-wider text-[var(--custom-green)] font-semibold">
+                &larr; Previous Challenge
+              </span>
+              <span className="text-sm font-medium high-contrast-text group-hover:underline line-clamp-1">
+                Week {prev.week}: {prev.title}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
+          {next ? (
+            <Link
+              href={`/challenges/${next.slug}`}
+              className="group flex flex-col text-right max-w-[45%] text-decoration-none no-underline ml-auto"
+            >
+              <span className="text-xs uppercase tracking-wider text-[var(--custom-green)] font-semibold">
+                Next Challenge &rarr;
+              </span>
+              <span className="text-sm font-medium high-contrast-text group-hover:underline line-clamp-1">
+                Week {next.week}: {next.title}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
+        </nav>
+      )}
     </article>
   );
 }
