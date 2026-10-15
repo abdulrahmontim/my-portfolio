@@ -18,7 +18,7 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
         </span>
         <div className="flex items-center gap-2">
           <StatusBadge status={frontmatter.status} />
-          <CategoryBadge category={frontmatter.category} />
+          <CategoryBadge category={frontmatter.category} section="challenges" />
         </div>
       </div>
 

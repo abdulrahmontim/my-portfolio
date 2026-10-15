@@ -23,7 +23,7 @@ export default function HomeChallenge() {
             </span>
             <div className="d-flex align-items-center gap-2">
               <StatusBadge status={frontmatter.status} />
-              <CategoryBadge category={frontmatter.category} />
+              <CategoryBadge category={frontmatter.category} section="challenges" />
             </div>
           </div>
 
