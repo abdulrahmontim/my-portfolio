@@ -109,7 +109,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           href="/blog"
           className="text-sm font-semibold text-[var(--custom-green)] hover:underline inline-flex items-center gap-1.5"
         >
-          <span>&larr; Back to all articles</span>
+          <span>&larr; All posts</span>
         </Link>
       </div>
 

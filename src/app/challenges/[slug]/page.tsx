@@ -79,7 +79,7 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
           href="/challenges"
           className="text-sm font-semibold text-[var(--custom-green)] hover:underline inline-flex items-center gap-1.5"
         >
-          <span>&larr; Back to all challenges</span>
+          <span>&larr; All challenges</span>
         </Link>
       </div>
 

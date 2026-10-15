@@ -17,19 +17,19 @@ export default function NotFound() {
           href="/"
           className="px-4 py-2 rounded-md font-medium bg-[var(--custom-green)] text-white hover:opacity-90 transition-opacity no-underline"
         >
-          Return Home
+          Home
         </Link>
         <Link
           href="/blog"
           className="px-4 py-2 rounded-md font-medium border border-[var(--bs-border-color,#374151)] hover:border-[var(--custom-green)] transition-colors no-underline text-inherit"
         >
-          Read Blog
+          Blog
         </Link>
         <Link
           href="/challenges"
           className="px-4 py-2 rounded-md font-medium border border-[var(--bs-border-color,#374151)] hover:border-[var(--custom-green)] transition-colors no-underline text-inherit"
         >
-          View Challenges
+          Challenges
         </Link>
       </div>
     </div>

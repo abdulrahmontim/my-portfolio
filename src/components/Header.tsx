@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 function subscribe(callback: () => void) {
   window.addEventListener("storage", callback);
@@ -62,8 +63,28 @@ function ThemeIcon({ theme }: { theme: "dark" | "light" }) {
 }
 
 export default function Header() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setIsOpen(false);
+  }
+
+  // Close mobile menu on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   const toggleTheme = () => {
     const currentTheme =
@@ -80,11 +101,14 @@ export default function Header() {
     setIsOpen(false);
   };
 
+  const isChallengesActive = pathname === "/challenges" || pathname.startsWith("/challenges/");
+  const isBlogActive = pathname === "/blog" || pathname.startsWith("/blog/");
+
   return (
     <header className="sticky-top">
-      <nav className="navbar navbar-expand-lg border-bottom bg-body">
+      <nav className="navbar navbar-expand-lg border-bottom bg-body" aria-label="Main navigation">
         <div className="container">
-          <Link className="navbar-brand" href="/">
+          <Link className="navbar-brand" href="/" onClick={closeMenu}>
             {/* Plain img used to match exact rendering and CSS inversion transitions */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -103,10 +127,10 @@ export default function Header() {
           <button
             className="navbar-toggler"
             type="button"
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => setIsOpen((prev) => !prev)}
             aria-controls="navbarNav"
             aria-expanded={isOpen}
-            aria-label="Toggle navigation"
+            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
           >
             <span className="navbar-toggler-icon"></span>
           </button>
@@ -138,12 +162,22 @@ export default function Header() {
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link fw-medium high-contrast-text" href="/challenges" onClick={closeMenu}>
+              <Link
+                className={`nav-link high-contrast-text ${isChallengesActive ? "text-green fw-bold active" : "fw-medium"}`}
+                href="/challenges"
+                onClick={closeMenu}
+                aria-current={isChallengesActive ? "page" : undefined}
+              >
                 Challenges
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link fw-medium high-contrast-text" href="/blog" onClick={closeMenu}>
+              <Link
+                className={`nav-link high-contrast-text ${isBlogActive ? "text-green fw-bold active" : "fw-medium"}`}
+                href="/blog"
+                onClick={closeMenu}
+                aria-current={isBlogActive ? "page" : undefined}
+              >
                 Blog
               </Link>
             </li>
