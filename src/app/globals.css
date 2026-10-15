@@ -1,8 +1,117 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@custom-variant dark (&:where([data-bs-theme="dark"], [data-bs-theme="dark"] *));
+
 html {
   scroll-behavior: smooth;
+}
+
+/* --- PROSE & MDX CONTENT TYPOGRAPHY & CONTRAST --- */
+.prose {
+    max-width: none;
+    font-size: 1.05rem;
+    line-height: 1.75;
+}
+
+[data-bs-theme="dark"] .prose {
+    --tw-prose-body: #e5e7eb;
+    --tw-prose-headings: #ffffff;
+    --tw-prose-lead: #9ca3af;
+    --tw-prose-links: var(--custom-green);
+    --tw-prose-bold: #ffffff;
+    --tw-prose-counters: #9ca3af;
+    --tw-prose-bullets: #9ca3af;
+    --tw-prose-hr: #374151;
+    --tw-prose-quotes: #f3f4f6;
+    --tw-prose-quote-borders: var(--custom-green);
+    --tw-prose-captions: #9ca3af;
+    --tw-prose-code: #f3f4f6;
+    --tw-prose-pre-code: #e5e7eb;
+    --tw-prose-pre-bg: #111827;
+    --tw-prose-th-borders: #374151;
+    --tw-prose-td-borders: #374151;
+    color: #e5e7eb !important;
+}
+
+[data-bs-theme="dark"] .prose :where(h1, h2, h3, h4, h5, h6) {
+    color: #ffffff !important;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+[data-bs-theme="dark"] .prose :where(p, li, dd, dt) {
+    color: #e5e7eb !important;
+}
+
+[data-bs-theme="dark"] .prose :where(strong, b) {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+[data-bs-theme="dark"] .prose :where(a) {
+    color: var(--custom-green) !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+[data-bs-theme="dark"] .prose :where(code) {
+    color: #e2e8f0 !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+}
+
+[data-bs-theme="light"] .prose {
+    --tw-prose-body: #1f2937;
+    --tw-prose-headings: #111827;
+    --tw-prose-lead: #4b5563;
+    --tw-prose-links: var(--custom-green);
+    --tw-prose-bold: #111827;
+    --tw-prose-counters: #6b7280;
+    --tw-prose-bullets: #6b7280;
+    --tw-prose-hr: #e5e7eb;
+    --tw-prose-quotes: #111827;
+    --tw-prose-quote-borders: var(--custom-green);
+    --tw-prose-captions: #6b7280;
+    --tw-prose-code: #111827;
+    --tw-prose-pre-code: #1f2937;
+    --tw-prose-pre-bg: #f3f4f6;
+    --tw-prose-th-borders: #e5e7eb;
+    --tw-prose-td-borders: #e5e7eb;
+    color: #1f2937 !important;
+}
+
+[data-bs-theme="light"] .prose :where(h1, h2, h3, h4, h5, h6) {
+    color: #111827 !important;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+[data-bs-theme="light"] .prose :where(p, li, dd, dt) {
+    color: #1f2937 !important;
+}
+
+[data-bs-theme="light"] .prose :where(strong, b) {
+    color: #111827 !important;
+    font-weight: 700;
+}
+
+[data-bs-theme="light"] .prose :where(a) {
+    color: var(--custom-green) !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+[data-bs-theme="light"] .prose :where(code) {
+    color: #0f172a !important;
+    background-color: rgba(0, 0, 0, 0.06);
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
 }
 
 /* --- GLOBAL FIX FOR NAV COVERING SECTION TITLES --- */
