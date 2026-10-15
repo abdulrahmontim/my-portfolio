@@ -114,13 +114,7 @@ export default function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: themeCss }} />
       </head>
       <body>
-        <Script
-          id="theme-initializer"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('bs-theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);}catch(e){}})();`,
-          }}
-        />
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
