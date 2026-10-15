@@ -49,29 +49,35 @@ section {
 }
 
 /* --- BUTTON INTERACTIONS & TRANSITIONS --- */
-.btn-green {
-    background-color: var(--custom-green);
-    color: #ffffff;
-    border: none;
+.btn-green,
+.btn.btn-green {
+    background-color: var(--custom-green) !important;
+    color: #ffffff !important;
+    border: none !important;
     transition: all 0.3s ease;
+    text-decoration: none !important;
 }
 
-.btn-green:hover {
-    background-color: var(--custom-green-hover);
-    color: #ffffff;
+.btn-green:hover,
+.btn.btn-green:hover {
+    background-color: var(--custom-green-hover) !important;
+    color: #ffffff !important;
     transform: translateY(-2px); /* Seamless bounce effect on hover */
 }
 
-.btn-outline-green {
-    border: 2px solid var(--custom-green);
-    color: var(--custom-green);
-    background-color: transparent;
+.btn-outline-green,
+.btn.btn-outline-green {
+    border: 2px solid var(--custom-green) !important;
+    color: var(--custom-green) !important;
+    background-color: transparent !important;
     transition: all 0.3s ease;
+    text-decoration: none !important;
 }
 
-.btn-outline-green:hover {
-    background-color: var(--custom-green);
-    color: #ffffff;
+.btn-outline-green:hover,
+.btn.btn-outline-green:hover {
+    background-color: var(--custom-green) !important;
+    color: #ffffff !important;
     transform: translateY(-2px); /* Synced with primary button animation */
 }
 
