@@ -1,9 +1,31 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
+import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./bootstrap.min.css";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
+const fontDisplay = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const fontSans = Instrument_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500"],
+  variable: "--font-mono",
+  display: "swap",
+});
 import { PALETTES } from "@/lib/palettes";
 import { siteConfig, SITE_URL, ACTIVE_PALETTE } from "@/lib/site";
 
@@ -85,7 +107,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-bs-theme="dark" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-bs-theme="dark"
+      className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <style dangerouslySetInnerHTML={{ __html: themeCss }} />
         <script
