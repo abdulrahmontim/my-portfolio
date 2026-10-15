@@ -11,6 +11,14 @@ export default function Contact() {
         <a href={siteConfig.links.email} className="btn btn-lg btn-green fw-bold px-4">
           Say Hello
         </a>
+        <a
+          href={siteConfig.links.youtube}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-lg btn-outline-green fw-bold px-4"
+        >
+          YouTube
+        </a>
       </div>
     </section>
   );

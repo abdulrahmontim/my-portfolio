@@ -7,6 +7,7 @@ export const siteConfig = {
   links: {
     github: "https://github.com/abdulrahmontim",
     linkedin: "https://www.linkedin.com/in/abdulrahmon-sulaimon",
+    youtube: "https://www.youtube.com/@abdulrahmontim",
     email: "mailto:abdulrahmonsulaimon60@gmail.com",
   },
 };
