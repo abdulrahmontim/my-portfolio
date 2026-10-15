@@ -1,3 +1,8 @@
+import { getActivePaletteName, PaletteName } from "./palettes";
+
+export const ACTIVE_PALETTE: PaletteName = getActivePaletteName();
+export const OPEN_TO_WORK: boolean = true;
+
 const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://abdulrahmon-sulaimon.vercel.app";
 export const SITE_URL = rawSiteUrl.replace(/\/+$/, "");
 

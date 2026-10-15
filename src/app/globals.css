@@ -3,6 +3,33 @@
 
 @custom-variant dark (&:where([data-bs-theme="dark"], [data-bs-theme="dark"] *));
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary-tint: var(--secondary-tint);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-border: var(--accent-border);
+  --color-primary-glow: var(--primary-glow);
+}
+
+:root {
+  --primary-hover: color-mix(in srgb, var(--primary) 82%, white);
+  --secondary-tint: color-mix(in srgb, var(--secondary) 14%, transparent);
+  --accent-tint: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 35%, var(--border));
+  --primary-glow: color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
 html {
   scroll-behavior: smooth;
 }

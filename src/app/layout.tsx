@@ -4,7 +4,36 @@ import "./bootstrap.min.css";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { siteConfig, SITE_URL } from "@/lib/site";
+import { PALETTES } from "@/lib/palettes";
+import { siteConfig, SITE_URL, ACTIVE_PALETTE } from "@/lib/site";
+
+const palette = PALETTES[ACTIVE_PALETTE] || PALETTES.signal;
+const themeCss = `
+:root {
+  --bg: ${palette.dark.bg};
+  --surface: ${palette.dark.surface};
+  --surface2: ${palette.dark.surface2};
+  --border: ${palette.dark.border};
+  --text: ${palette.dark.text};
+  --muted: ${palette.dark.muted};
+  --primary: ${palette.dark.primary};
+  --on-primary: ${palette.dark.onPrimary};
+  --secondary: ${palette.dark.secondary};
+  --accent: ${palette.dark.accent};
+}
+[data-bs-theme="light"], html[data-bs-theme="light"] {
+  --bg: ${palette.light.bg};
+  --surface: ${palette.light.surface};
+  --surface2: ${palette.light.surface2};
+  --border: ${palette.light.border};
+  --text: ${palette.light.text};
+  --muted: ${palette.light.muted};
+  --primary: ${palette.light.primary};
+  --on-primary: ${palette.light.onPrimary};
+  --secondary: ${palette.light.secondary};
+  --accent: ${palette.light.accent};
+}
+`;
 
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
@@ -58,6 +87,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-bs-theme="dark" suppressHydrationWarning>
       <head>
+        <style dangerouslySetInnerHTML={{ __html: themeCss }} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('bs-theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);}catch(e){}})();`,
