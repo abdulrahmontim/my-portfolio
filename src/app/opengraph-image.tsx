@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, ACTIVE_PALETTE } from "@/lib/site";
+import { PALETTES } from "@/lib/palettes";
 
 export const alt = "Abdulrahmon Sulaimon | Backend Software Engineer";
 export const size = {
@@ -10,6 +11,8 @@ export const contentType = "image/png";
 
 export default async function Image() {
   const displayUrl = SITE_URL.replace(/^https?:\/\//, "");
+  const palette = PALETTES[ACTIVE_PALETTE] || PALETTES.signal;
+  const { bg, text, muted, primary, border } = palette.dark;
 
   return new ImageResponse(
     (
@@ -21,10 +24,10 @@ export default async function Image() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "80px",
-          backgroundColor: "#0d1117",
-          color: "#ffffff",
+          backgroundColor: bg,
+          color: text,
           fontFamily: "sans-serif",
-          borderTop: "8px solid #2ecc71",
+          borderTop: `8px solid ${primary}`,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -32,7 +35,7 @@ export default async function Image() {
             style={{
               fontSize: "24px",
               fontWeight: 700,
-              color: "#2ecc71",
+              color: primary,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
             }}
@@ -52,7 +55,7 @@ export default async function Image() {
           <div
             style={{
               fontSize: "32px",
-              color: "#9ca3af",
+              color: muted,
               fontWeight: 500,
             }}
           >
@@ -66,9 +69,9 @@ export default async function Image() {
             justifyContent: "space-between",
             alignItems: "center",
             paddingTop: "32px",
-            borderTop: "1px solid #21262d",
+            borderTop: `1px solid ${border}`,
             fontSize: "22px",
-            color: "#8b949e",
+            color: muted,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -80,7 +83,7 @@ export default async function Image() {
             <span>&bull;</span>
             <span>Electronics</span>
           </div>
-          <div style={{ color: "#2ecc71", fontWeight: 600 }}>
+          <div style={{ color: primary, fontWeight: 600 }}>
             {displayUrl}
           </div>
         </div>

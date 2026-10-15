@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getPost } from "@/lib/content";
-import { CATEGORIES, CategoryKey, SITE_URL } from "@/lib/site";
+import { CATEGORIES, CategoryKey, SITE_URL, ACTIVE_PALETTE } from "@/lib/site";
+import { PALETTES } from "@/lib/palettes";
 
 export const alt = "Blog Post | Abdulrahmon Sulaimon";
 export const size = {
@@ -24,6 +25,9 @@ export default async function Image({ params }: Props) {
     : "Engineering";
   const displayUrl = SITE_URL.replace(/^https?:\/\//, "");
 
+  const palette = PALETTES[ACTIVE_PALETTE] || PALETTES.signal;
+  const { bg, text, muted, primary, border } = palette.dark;
+
   return new ImageResponse(
     (
       <div
@@ -34,10 +38,10 @@ export default async function Image({ params }: Props) {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "80px",
-          backgroundColor: "#0d1117",
-          color: "#ffffff",
+          backgroundColor: bg,
+          color: text,
           fontFamily: "sans-serif",
-          borderTop: "8px solid #2ecc71",
+          borderTop: `8px solid ${primary}`,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -46,16 +50,15 @@ export default async function Image({ params }: Props) {
               style={{
                 fontSize: "20px",
                 fontWeight: 700,
-                color: "#2ecc71",
-                backgroundColor: "rgba(46, 204, 113, 0.12)",
+                color: primary,
                 padding: "6px 16px",
                 borderRadius: "9999px",
-                border: "1px solid rgba(46, 204, 113, 0.3)",
+                border: `1px solid ${border}`,
               }}
             >
               {categoryLabel}
             </span>
-            <span style={{ fontSize: "20px", color: "#8b949e" }}>Blog Article</span>
+            <span style={{ fontSize: "20px", color: muted }}>Blog Article</span>
           </div>
 
           <div
@@ -77,17 +80,17 @@ export default async function Image({ params }: Props) {
             justifyContent: "space-between",
             alignItems: "center",
             paddingTop: "32px",
-            borderTop: "1px solid #21262d",
+            borderTop: `1px solid ${border}`,
             fontSize: "22px",
-            color: "#8b949e",
+            color: muted,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontWeight: 600, color: "#e5e7eb" }}>Abdulrahmon Sulaimon</span>
+            <span style={{ fontWeight: 600, color: text }}>Abdulrahmon Sulaimon</span>
             <span>&bull;</span>
             <span>Backend Software Engineer</span>
           </div>
-          <div style={{ color: "#2ecc71", fontWeight: 600 }}>
+          <div style={{ color: primary, fontWeight: 600 }}>
             {displayUrl}
           </div>
         </div>
