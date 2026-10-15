@@ -65,8 +65,11 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <Header />
-        <main className="container" id="main-content">
+        <main className="container" id="main-content" tabIndex={-1}>
           {children}
         </main>
         <div className="container">
