@@ -3,7 +3,7 @@ import Button from "@/components/ui/Button";
 
 export default function Hero() {
   return (
-    <section className="relative w-full py-16 sm:py-24 dot-grid border-b border-border">
+    <section className="relative w-full pt-8 sm:pt-12 pb-12 sm:pb-16 dot-grid border-b border-border">
       <div className="max-w-[1120px] mx-auto px-6 flex flex-col items-start gap-6">
         <Pill />
         <h1 className="text-[40px] sm:text-[56px] lg:text-[72px] font-extrabold text-text tracking-tight leading-[1.05] max-w-[860px]">
