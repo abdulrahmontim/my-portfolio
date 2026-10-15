@@ -111,16 +111,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 h-[68px] border-b border-border bg-bg/85 backdrop-blur-md">
       <div className="max-w-[1120px] mx-auto px-6 h-full flex items-center justify-between">
-        {/* Left: Logo + Name */}
+        {/* Left: Logo */}
         <Link
           href="/"
           onClick={closeMenu}
-          className="flex items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+          aria-label="Home"
+          className="flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
         >
-          <Logo size={32} />
-          <span className="font-display font-bold text-[18px] text-text tracking-tight">
-            Abdulrahmon
-          </span>
+          <Logo size={36} />
         </Link>
 
         {/* Right (Desktop): Nav links + Theme Toggle + Contact Button */}
