@@ -66,6 +66,16 @@ export default function Header() {
               </Link>
             </li>
             <li className="nav-item">
+              <Link className="nav-link fw-medium high-contrast-text" href="/challenges" onClick={closeMenu}>
+                Challenges
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link fw-medium high-contrast-text" href="/blog" onClick={closeMenu}>
+                Blog
+              </Link>
+            </li>
+            <li className="nav-item">
               <Link className="nav-link fw-medium high-contrast-text" href="/#contact" onClick={closeMenu}>
                 Contact
               </Link>
