@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
-import "./bootstrap.min.css";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -126,12 +125,10 @@ export default function RootLayout({
           Skip to content
         </a>
         <Header />
-        <main className="container" id="main-content" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1} className="w-full flex-1 focus:outline-none">
           {children}
         </main>
-        <div className="container">
-          <Footer />
-        </div>
+        <Footer />
         <Analytics />
       </body>
     </html>

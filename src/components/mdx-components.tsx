@@ -12,27 +12,27 @@ export interface CalloutProps {
 export function Callout({ type = "note", title, children }: CalloutProps) {
   const styles = {
     note: {
-      border: "border-blue-500",
-      bg: "bg-blue-500/10",
-      titleColor: "text-blue-500 dark:text-blue-400",
+      border: "border-secondary",
+      bg: "bg-secondary-tint",
+      titleColor: "text-secondary",
       defaultTitle: "Note",
     },
     tip: {
-      border: "border-[var(--custom-green,#2ecc71)]",
-      bg: "bg-[var(--custom-green,#2ecc71)]/10",
-      titleColor: "text-[var(--custom-green,#2ecc71)]",
+      border: "border-primary",
+      bg: "bg-primary-glow",
+      titleColor: "text-primary",
       defaultTitle: "Tip",
     },
     warning: {
-      border: "border-amber-500",
-      bg: "bg-amber-500/10",
-      titleColor: "text-amber-500 dark:text-amber-400",
+      border: "border-accent",
+      bg: "bg-accent-tint",
+      titleColor: "text-accent",
       defaultTitle: "Warning",
     },
   }[type] || {
-    border: "border-blue-500",
-    bg: "bg-blue-500/10",
-    titleColor: "text-blue-500",
+    border: "border-secondary",
+    bg: "bg-secondary-tint",
+    titleColor: "text-secondary",
     defaultTitle: "Note",
   };
 
@@ -41,10 +41,10 @@ export function Callout({ type = "note", title, children }: CalloutProps) {
       className={`my-6 p-4 rounded-r-lg border-l-4 ${styles.border} ${styles.bg}`}
       role="note"
     >
-      <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${styles.titleColor}`}>
+      <div className={`text-xs font-mono font-bold uppercase tracking-wider mb-1 ${styles.titleColor}`}>
         {title || styles.defaultTitle}
       </div>
-      <div className="text-sm sm:text-base leading-relaxed opacity-95 high-contrast-text [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+      <div className="text-sm sm:text-base leading-relaxed text-text [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
         {children}
       </div>
     </aside>
@@ -64,11 +64,11 @@ export function Figure({ src, alt, caption }: FigureProps) {
       <img
         src={src}
         alt={alt}
-        className="max-w-full h-auto rounded-lg mx-auto border border-[var(--bs-border-color,#374151)] shadow-sm"
+        className="max-w-full h-auto rounded-lg mx-auto border border-border shadow-sm"
         loading="lazy"
       />
       {caption && (
-        <figcaption className="mt-2 text-xs sm:text-sm opacity-75 italic high-contrast-text">
+        <figcaption className="mt-2 text-xs sm:text-sm text-muted italic">
           {caption}
         </figcaption>
       )}
@@ -87,7 +87,7 @@ export function YouTube({ id }: YouTubeProps) {
     : id.replace(/^.*youtu\.be\//, "");
 
   return (
-    <div className="my-6 overflow-hidden rounded-lg border border-[var(--bs-border-color,#374151)] shadow-sm">
+    <div className="my-6 overflow-hidden rounded-lg border border-border shadow-sm">
       <div className="relative w-full aspect-video">
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${cleanId}`}
@@ -104,8 +104,8 @@ export function YouTube({ id }: YouTubeProps) {
 
 function CustomTable({ children, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="overflow-x-auto my-6 border border-[var(--bs-border-color,#374151)] rounded-lg">
-      <table className="min-w-full divide-y divide-[var(--bs-border-color,#374151)]" {...props}>
+    <div className="overflow-x-auto my-6 border border-border rounded-lg">
+      <table className="min-w-full divide-y divide-border" {...props}>
         {children}
       </table>
     </div>
@@ -117,7 +117,7 @@ function CustomLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTM
 
   if (href.startsWith("mailto:")) {
     return (
-      <a href={href} className="text-[var(--custom-green)] hover:underline" {...props}>
+      <a href={href} className="text-secondary hover:text-primary transition-colors underline underline-offset-4" {...props}>
         {children}
       </a>
     );
@@ -131,7 +131,7 @@ function CustomLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTM
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-[var(--custom-green)] hover:underline"
+        className="text-secondary hover:text-primary transition-colors underline underline-offset-4"
         {...props}
       >
         {children}
@@ -140,7 +140,7 @@ function CustomLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTM
   }
 
   return (
-    <Link href={href} className="text-[var(--custom-green)] hover:underline" {...props}>
+    <Link href={href} className="text-secondary hover:text-primary transition-colors underline underline-offset-4" {...props}>
       {children}
     </Link>
   );
@@ -161,7 +161,7 @@ function CustomImg({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElem
       alt={alt || ""}
       loading="lazy"
       decoding="async"
-      className="max-w-full h-auto rounded-lg mx-auto border border-[var(--bs-border-color,#374151)] shadow-sm"
+      className="max-w-full h-auto rounded-lg mx-auto border border-border shadow-sm"
       {...props}
     />
   );
