@@ -95,19 +95,9 @@ export default function Header() {
           />
         </Link>
 
-        {/* Controls container on mobile: visible theme toggle and hamburger */}
-        <div className="d-flex align-items-center gap-2">
-          {/* Mobile Theme Toggle (visible on screens < lg) */}
-          <button
-            className="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center d-lg-none theme-toggle-btn"
-            style={{ width: "40px", height: "40px" }}
-            aria-label="Toggle Theme"
-            onClick={toggleTheme}
-            title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-          >
-            <ThemeIcon theme={theme} />
-          </button>
-
+        {/* Top Right: Controls (Hamburger on mobile + Theme Toggle at top right) */}
+        <div className="d-flex align-items-center gap-2 order-lg-last ms-lg-3">
+          {/* Mobile Hamburger Toggler (visible only on screens < lg) */}
           <button
             className="navbar-toggler"
             type="button"
@@ -118,8 +108,21 @@ export default function Header() {
           >
             <span className="navbar-toggler-icon"></span>
           </button>
+
+          {/* Theme Toggle Button - always at the top right */}
+          <button
+            className="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center theme-toggle-btn"
+            id="themeToggle"
+            style={{ width: "40px", height: "40px" }}
+            aria-label="Toggle Theme"
+            onClick={toggleTheme}
+            title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+          >
+            <ThemeIcon theme={theme} />
+          </button>
         </div>
 
+        {/* Navigation links (collapsible on mobile, centered/right-aligned before toggle on desktop) */}
         <div className={`collapse navbar-collapse ${isOpen ? "show" : ""}`} id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-lg-center gap-3 pt-3 pt-lg-0">
             <li className="nav-item">
@@ -146,19 +149,6 @@ export default function Header() {
               <Link className="nav-link fw-medium high-contrast-text" href="/#contact" onClick={closeMenu}>
                 Contact
               </Link>
-            </li>
-            {/* Desktop Theme Toggle (visible on screens >= lg) */}
-            <li className="nav-item ms-lg-2 d-none d-lg-block">
-              <button
-                className="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center theme-toggle-btn"
-                id="themeToggle"
-                style={{ width: "40px", height: "40px" }}
-                aria-label="Toggle Theme"
-                onClick={toggleTheme}
-                title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-              >
-                <ThemeIcon theme={theme} />
-              </button>
             </li>
           </ul>
         </div>
