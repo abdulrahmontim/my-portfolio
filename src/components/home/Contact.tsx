@@ -1,4 +1,4 @@
-import { siteConfig } from "@/lib/site";
+import { EMAIL_LINK, SOCIAL_LINKS } from "@/lib/site";
 
 export default function Contact() {
   return (
@@ -8,17 +8,20 @@ export default function Contact() {
         I am currently open to new backend engineering opportunities. Whether you have a question or just want to say hi, I&apos;ll try my best to get back to you!
       </p>
       <div className="d-flex justify-content-center flex-wrap gap-3">
-        <a href={siteConfig.links.email} className="btn btn-lg btn-green fw-bold px-4">
+        <a href={EMAIL_LINK} className="btn btn-lg btn-green fw-bold px-4">
           Say Hello
         </a>
-        <a
-          href={siteConfig.links.youtube}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-lg btn-outline-green fw-bold px-4"
-        >
-          YouTube
-        </a>
+        {SOCIAL_LINKS.map((item) => (
+          <a
+            key={item.name}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-lg btn-outline-green fw-bold px-4"
+          >
+            {item.name}
+          </a>
+        ))}
       </div>
     </section>
   );

@@ -12,6 +12,14 @@ export const siteConfig = {
   },
 };
 
+export const SOCIAL_LINKS = [
+  { name: "GitHub", url: "https://github.com/abdulrahmontim" },
+  { name: "LinkedIn", url: "https://www.linkedin.com/in/abdulrahmon-sulaimon" },
+  { name: "YouTube", url: "https://www.youtube.com/@abdulrahmontim" },
+] as const;
+
+export const EMAIL_LINK = "mailto:abdulrahmonsulaimon60@gmail.com";
+
 export const CATEGORIES = {
   electronics: "Electronics",
   embedded: "Embedded",
