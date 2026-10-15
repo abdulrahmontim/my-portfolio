@@ -221,3 +221,16 @@ section, [id] {
     padding: 0 0.875rem;
   }
 }
+
+/* --- BRAND LOGO --- */
+.brand-logo {
+  object-fit: contain;
+  transition: filter 0.2s ease-in-out;
+}
+[data-bs-theme="dark"] .brand-logo {
+  filter: invert(1);
+}
+[data-bs-theme="light"] .brand-logo {
+  filter: invert(0);
+}
+

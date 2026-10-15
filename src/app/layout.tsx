@@ -77,6 +77,10 @@ export const metadata: Metadata = {
     template: "%s | Abdulrahmon Sulaimon",
   },
   description: siteConfig.description,
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
   alternates: {
     types: {
       "application/rss+xml": `${SITE_URL}/rss.xml`,
