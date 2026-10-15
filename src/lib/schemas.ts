@@ -20,6 +20,7 @@ export const challengeSchema = z.object({
   summary: z.string(),
   goal: z.string(),
   publishedAt: z.coerce.date(),
+  draft: z.boolean().default(false),
   writeup: z.string().optional(),
   video: z.string().url("Video must be a valid URL").optional(),
 });

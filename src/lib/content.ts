@@ -35,10 +35,20 @@ function getMdxFiles(dirPath: string): string[] {
   if (!fs.existsSync(dirPath)) {
     return [];
   }
-  return fs
-    .readdirSync(dirPath)
-    .filter((file) => file.endsWith(".mdx"))
-    .map((file) => path.join(dirPath, file));
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith("_") || entry.name === "_templates") {
+      continue;
+    }
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...getMdxFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith(".mdx") && !entry.name.startsWith("_")) {
+      files.push(fullPath);
+    }
+  }
+  return files;
 }
 
 function loadAllRawData() {
@@ -47,74 +57,152 @@ function loadAllRawData() {
   const draftChallengesDir = path.join(process.cwd(), "content", "drafts", "challenges");
   const draftBlogDir = path.join(process.cwd(), "content", "drafts", "blog");
 
-  // Collect challenge files
-  let challengeFilePaths = getMdxFiles(challengesDir);
-  if (!isProduction) {
-    challengeFilePaths = challengeFilePaths.concat(getMdxFiles(draftChallengesDir));
-  }
+  const regularChallengeFiles = getMdxFiles(challengesDir);
+  const devDraftChallengeFiles = (!isProduction && fs.existsSync(draftChallengesDir))
+    ? getMdxFiles(draftChallengesDir)
+    : [];
 
-  // Collect blog files
-  let blogFilePaths = getMdxFiles(blogDir);
-  if (!isProduction) {
-    blogFilePaths = blogFilePaths.concat(getMdxFiles(draftBlogDir));
-  }
+  const regularBlogFiles = getMdxFiles(blogDir);
+  const devDraftBlogFiles = (!isProduction && fs.existsSync(draftBlogDir))
+    ? getMdxFiles(draftBlogDir)
+    : [];
 
-  // Parse and validate challenges
-  const rawChallenges: Array<{
+  interface RawChallenge {
     slug: string;
     filePath: string;
     frontmatter: ChallengeFrontmatter;
     content: string;
-  }> = [];
+    isDraft: boolean;
+  }
 
-  for (const filePath of challengeFilePaths) {
+  const allRawChallenges: RawChallenge[] = [];
+
+  for (const filePath of regularChallengeFiles) {
     const rawContent = fs.readFileSync(filePath, "utf8");
     const { data, content } = matter(rawContent);
     const slug = path.basename(filePath, ".mdx");
     const frontmatter = validateChallengeFrontmatter(data, filePath);
-    rawChallenges.push({ slug, filePath, frontmatter, content });
+    allRawChallenges.push({
+      slug,
+      filePath,
+      frontmatter,
+      content,
+      isDraft: Boolean(frontmatter.draft),
+    });
   }
 
-  // Parse and validate posts
-  const rawPosts: Array<{
+  for (const filePath of devDraftChallengeFiles) {
+    const rawContent = fs.readFileSync(filePath, "utf8");
+    const { data, content } = matter(rawContent);
+    const slug = path.basename(filePath, ".mdx");
+    const frontmatter = validateChallengeFrontmatter(data, filePath);
+    allRawChallenges.push({
+      slug,
+      filePath,
+      frontmatter,
+      content,
+      isDraft: true,
+    });
+  }
+
+  interface RawPost {
     slug: string;
     filePath: string;
     frontmatter: PostFrontmatter;
     content: string;
-  }> = [];
+    isDraft: boolean;
+  }
 
-  for (const filePath of blogFilePaths) {
+  const allRawPosts: RawPost[] = [];
+
+  for (const filePath of regularBlogFiles) {
     const rawContent = fs.readFileSync(filePath, "utf8");
     const { data, content } = matter(rawContent);
     const slug = path.basename(filePath, ".mdx");
     const frontmatter = validatePostFrontmatter(data, filePath);
-
-    // Filter out draft posts in production
-    if (isProduction && frontmatter.draft) {
-      continue;
-    }
-
-    rawPosts.push({ slug, filePath, frontmatter, content });
+    allRawPosts.push({
+      slug,
+      filePath,
+      frontmatter,
+      content,
+      isDraft: Boolean(frontmatter.draft),
+    });
   }
 
-  // Integrity checks & cross-referencing
-  const postMap = new Map(rawPosts.map((p) => [p.slug, p]));
-  const challengeMap = new Map(rawChallenges.map((c) => [c.slug, c]));
+  for (const filePath of devDraftBlogFiles) {
+    const rawContent = fs.readFileSync(filePath, "utf8");
+    const { data, content } = matter(rawContent);
+    const slug = path.basename(filePath, ".mdx");
+    const frontmatter = validatePostFrontmatter(data, filePath);
+    allRawPosts.push({
+      slug,
+      filePath,
+      frontmatter,
+      content,
+      isDraft: true,
+    });
+  }
 
-  // Check challenges referencing writeups
-  const challenges: ChallengeItem[] = rawChallenges.map((c) => {
-    let resolvedWriteup: ResolvedRef | undefined;
+  const allPostsMap = new Map(allRawPosts.map((p) => [p.slug, p]));
+  const allChallengesMap = new Map(allRawChallenges.map((c) => [c.slug, c]));
+
+  // Integrity checks
+  // 1. Challenges referencing writeups
+  for (const c of allRawChallenges) {
     if (c.frontmatter.writeup) {
-      const referencedPost = postMap.get(c.frontmatter.writeup);
-      if (!referencedPost) {
+      const targetPost = allPostsMap.get(c.frontmatter.writeup);
+      if (!targetPost) {
         throw new Error(
           `Integrity check failed: Challenge in "${c.filePath}" references writeup slug "${c.frontmatter.writeup}", but no matching post was found.`
         );
       }
-      resolvedWriteup = {
-        slug: referencedPost.slug,
-        title: referencedPost.frontmatter.title,
-      };
+      if (isProduction && !c.isDraft && targetPost.isDraft) {
+        throw new Error(
+          `"${c.filePath}" is published but links to unpublished "${c.frontmatter.writeup}"`
+        );
+      }
+    }
+  }
+
+  // 2. Posts referencing challenges
+  for (const p of allRawPosts) {
+    if (p.frontmatter.challenge) {
+      const targetChallenge = allChallengesMap.get(p.frontmatter.challenge);
+      if (!targetChallenge) {
+        throw new Error(
+          `Integrity check failed: Post in "${p.filePath}" references challenge slug "${p.frontmatter.challenge}", but no matching challenge was found.`
+        );
+      }
+      if (isProduction && !p.isDraft && targetChallenge.isDraft) {
+        throw new Error(
+          `"${p.filePath}" is published but links to unpublished "${p.frontmatter.challenge}"`
+        );
+      }
+    }
+  }
+
+  // Filter for production vs dev
+  const activeChallenges = isProduction
+    ? allRawChallenges.filter((c) => !c.isDraft)
+    : allRawChallenges;
+
+  const activePosts = isProduction
+    ? allRawPosts.filter((p) => !p.isDraft)
+    : allRawPosts;
+
+  const activePostMap = new Map(activePosts.map((p) => [p.slug, p]));
+  const activeChallengeMap = new Map(activeChallenges.map((c) => [c.slug, c]));
+
+  const challenges: ChallengeItem[] = activeChallenges.map((c) => {
+    let resolvedWriteup: ResolvedRef | undefined;
+    if (c.frontmatter.writeup) {
+      const referencedPost = activePostMap.get(c.frontmatter.writeup);
+      if (referencedPost) {
+        resolvedWriteup = {
+          slug: referencedPost.slug,
+          title: referencedPost.frontmatter.title,
+        };
+      }
     }
     return {
       slug: c.slug,
@@ -125,20 +213,16 @@ function loadAllRawData() {
     };
   });
 
-  // Check posts referencing challenges
-  const posts: PostItem[] = rawPosts.map((p) => {
+  const posts: PostItem[] = activePosts.map((p) => {
     let resolvedChallenge: ResolvedRef | undefined;
     if (p.frontmatter.challenge) {
-      const referencedChallenge = challengeMap.get(p.frontmatter.challenge);
-      if (!referencedChallenge) {
-        throw new Error(
-          `Integrity check failed: Post in "${p.filePath}" references challenge slug "${p.frontmatter.challenge}", but no matching challenge was found.`
-        );
+      const referencedChallenge = activeChallengeMap.get(p.frontmatter.challenge);
+      if (referencedChallenge) {
+        resolvedChallenge = {
+          slug: referencedChallenge.slug,
+          title: referencedChallenge.frontmatter.title,
+        };
       }
-      resolvedChallenge = {
-        slug: referencedChallenge.slug,
-        title: referencedChallenge.frontmatter.title,
-      };
     }
     return {
       slug: p.slug,
@@ -149,10 +233,7 @@ function loadAllRawData() {
     };
   });
 
-  // Sort challenges by week descending
   challenges.sort((a, b) => b.frontmatter.week - a.frontmatter.week);
-
-  // Sort posts by publishedAt newest first
   posts.sort(
     (a, b) => b.frontmatter.publishedAt.getTime() - a.frontmatter.publishedAt.getTime()
   );
