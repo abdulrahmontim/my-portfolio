@@ -153,12 +153,27 @@ export function getYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+function CustomImg({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt || ""}
+      loading="lazy"
+      decoding="async"
+      className="max-w-full h-auto rounded-lg mx-auto border border-[var(--bs-border-color,#374151)] shadow-sm"
+      {...props}
+    />
+  );
+}
+
 export const mdxComponents = {
   Callout,
   Figure,
   YouTube,
   table: CustomTable,
   a: CustomLink,
+  img: CustomImg,
 };
 
 export const mdxRemoteOptions: MDXRemoteProps["options"] = {

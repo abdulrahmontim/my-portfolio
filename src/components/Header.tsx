@@ -81,19 +81,21 @@ export default function Header() {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg border-bottom sticky-top bg-body">
-      <div className="container">
-        <Link className="navbar-brand" href="/">
-          {/* Plain img used to match exact rendering and CSS inversion transitions */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="AR Logo"
-            height={40}
-            style={{ height: "40px", width: "auto" }}
-            className="brand-logo"
-          />
-        </Link>
+    <header className="sticky-top">
+      <nav className="navbar navbar-expand-lg border-bottom bg-body">
+        <div className="container">
+          <Link className="navbar-brand" href="/">
+            {/* Plain img used to match exact rendering and CSS inversion transitions */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Abdulrahmon Sulaimon"
+              width={48}
+              height={40}
+              style={{ height: "40px", width: "auto" }}
+              className="brand-logo"
+            />
+          </Link>
 
         {/* Top Right: Controls (Hamburger on mobile + Theme Toggle at top right) */}
         <div className="d-flex align-items-center gap-2 order-lg-last ms-lg-3">
@@ -154,5 +156,6 @@ export default function Header() {
         </div>
       </div>
     </nav>
+  </header>
   );
 }

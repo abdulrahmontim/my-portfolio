@@ -21,7 +21,7 @@ export default function HomeWriting() {
         {posts.map((post) => (
           <div key={post.slug} className="col-12 col-md-6 col-lg-4 d-flex">
             <div className="w-100">
-              <PostCard post={post} />
+              <PostCard post={post} headingLevel="h3" />
             </div>
           </div>
         ))}

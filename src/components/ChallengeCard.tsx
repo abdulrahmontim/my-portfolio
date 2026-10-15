@@ -5,10 +5,12 @@ import StatusBadge from "./StatusBadge";
 
 interface ChallengeCardProps {
   challenge: ChallengeItem;
+  headingLevel?: "h2" | "h3";
 }
 
-export default function ChallengeCard({ challenge }: ChallengeCardProps) {
+export default function ChallengeCard({ challenge, headingLevel = "h2" }: ChallengeCardProps) {
   const { slug, frontmatter, resolvedWriteup } = challenge;
+  const HeadingTag = headingLevel;
 
   return (
     <article className="border border-[var(--bs-border-color,#374151)] rounded-lg p-6 bg-body-tertiary hover:border-[var(--custom-green)] transition-all duration-300 flex flex-col h-full group">
@@ -22,11 +24,11 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
         </div>
       </div>
 
-      <h3 className="text-xl font-bold mb-2 group-hover:text-[var(--custom-green)] transition-colors">
+      <HeadingTag className="text-xl font-bold mb-2 group-hover:text-[var(--custom-green)] transition-colors">
         <Link href={`/challenges/${slug}`} className="hover:underline text-inherit no-underline">
           {frontmatter.title}
         </Link>
-      </h3>
+      </HeadingTag>
 
       <p className="text-sm opacity-80 mb-4 line-clamp-3 flex-grow">
         {frontmatter.summary}
