@@ -1,9 +1,12 @@
+const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://abdulrahmon-sulaimon.vercel.app";
+export const SITE_URL = rawSiteUrl.replace(/\/+$/, "");
+
 export const siteConfig = {
   name: "Abdulrahmon Sulaimon",
   title: "Abdulrahmon Sulaimon | Backend Engineer",
   description:
     "I'm a Computer Engineering student with a background in electronics building scalable, production-grade backend systems specializing in Python, FastAPI, Django.",
-  url: "https://abdulrahmon-sulaimon.vercel.app",
+  url: SITE_URL,
   links: {
     github: "https://github.com/abdulrahmontim",
     linkedin: "https://www.linkedin.com/in/abdulrahmon-sulaimon",
