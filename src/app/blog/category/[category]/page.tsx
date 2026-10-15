@@ -67,21 +67,21 @@ export default async function BlogCategoryPage({ params }: PageProps) {
   }
 
   return (
-    <div className="py-8 sm:py-12">
-      <div className="mb-6">
+    <div className="w-full max-w-[1120px] mx-auto px-6 py-12">
+      <div className="mb-8">
         <Link
           href="/blog"
-          className="text-sm font-semibold text-[var(--custom-green)] hover:underline inline-flex items-center gap-1.5"
+          className="font-mono text-xs text-muted hover:text-text transition-colors inline-flex items-center gap-1.5"
         >
           <span>&larr; All categories</span>
         </Link>
       </div>
 
-      <header className="mb-10 pb-6 border-b border-[var(--bs-border-color,#374151)]">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2 high-contrast-text">
+      <header className="mb-10 pb-6 border-b border-border">
+        <h1 className="font-display font-bold text-[36px] sm:text-[48px] text-text tracking-tight mb-2 leading-tight">
           {label}
         </h1>
-        <p className="text-sm opacity-75 font-mono">
+        <p className="text-xs font-mono text-muted">
           {posts.length} {posts.length === 1 ? "article" : "articles"} in this category
         </p>
       </header>

@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import { getAdjacentChallenges, getAllChallenges, getChallenge } from "@/lib/content";
+import { getAllChallenges, getChallenge, getAdjacentChallenges } from "@/lib/content";
 import { SITE_URL } from "@/lib/site";
-import CategoryBadge from "@/components/CategoryBadge";
 import StatusBadge from "@/components/StatusBadge";
-import { mdxComponents, mdxRemoteOptions, getYouTubeId, YouTube } from "@/components/mdx-components";
+import CategoryBadge from "@/components/CategoryBadge";
+import Tag from "@/components/ui/Tag";
+import Card from "@/components/ui/Card";
+import { getYouTubeId, mdxComponents, mdxRemoteOptions, YouTube } from "@/components/mdx-components";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -50,7 +52,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: ogTitle,
       description,
       url,
-      type: "website",
+      type: "article",
+      publishedTime: challenge.frontmatter.publishedAt.toISOString(),
+      tags: challenge.frontmatter.tags,
     },
     twitter: {
       card: "summary_large_image",
@@ -72,129 +76,122 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
   const { prev, next } = getAdjacentChallenges(slug);
 
   return (
-    <article className="py-8 sm:py-12 max-w-3xl mx-auto">
-      {/* Back button */}
+    <article className="w-full max-w-[1120px] mx-auto px-6 py-12">
+      {/* Muted mono back link */}
       <div className="mb-8">
         <Link
           href="/challenges"
-          className="text-sm font-semibold text-[var(--custom-green)] hover:underline inline-flex items-center gap-1.5"
+          className="font-mono text-xs text-muted hover:text-text transition-colors inline-flex items-center gap-1.5"
         >
           <span>&larr; All challenges</span>
         </Link>
       </div>
 
       {/* Header metadata */}
-      <header className="mb-8 pb-6 border-b border-[var(--bs-border-color,#374151)]">
+      <header className="mb-10 pb-8 border-b border-border">
+        {/* Meta row: mono week label, StatusBadge, category Tag, difficulty Tag */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <span className="text-sm font-bold uppercase tracking-wider text-[var(--custom-green)]">
+          <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold">
             Week {frontmatter.week}
           </span>
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={frontmatter.status} />
             <CategoryBadge category={frontmatter.category} section="challenges" />
-            <span className="text-xs px-2.5 py-0.5 rounded-full border border-[var(--bs-border-color,#374151)] opacity-75 capitalize">
-              Difficulty: {frontmatter.difficulty}
-            </span>
+            <Tag>Difficulty: {frontmatter.difficulty}</Tag>
           </div>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 leading-tight high-contrast-text">
+        <h1 className="font-display font-extrabold text-[36px] sm:text-[44px] lg:text-[52px] text-text max-w-[820px] leading-tight mb-4">
           {frontmatter.title}
         </h1>
 
-        <p className="text-lg opacity-85 leading-relaxed high-contrast-text mb-4">
+        <p className="text-[18px] text-muted leading-relaxed max-w-2xl mb-6">
           {frontmatter.summary}
         </p>
 
-        {frontmatter.tags && frontmatter.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-2">
-            {frontmatter.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2.5 py-0.5 rounded-full text-xs bg-[var(--bs-border-color,#374151)]/20 opacity-80"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </header>
-
-      {/* Highlighted "Goal" Block (Definition of Done) */}
-      <div className="mb-8 p-5 rounded-lg border border-[var(--custom-green)]/30 bg-[var(--custom-green)]/5">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--custom-green)]">
-            Definition of Done (Goal)
+        {/* Definition of Done Box (Card with accent border, mono label in accent, goal in 20px) */}
+        <Card isLive={true} className="p-6 my-6">
+          <span className="font-mono text-xs uppercase tracking-wider text-accent font-semibold block mb-2">
+            Definition of Done
           </span>
-        </div>
-        <p className="text-base font-medium high-contrast-text mb-0 leading-relaxed">
-          {frontmatter.goal}
-        </p>
-      </div>
+          <p className="text-[20px] text-text font-medium leading-relaxed">
+            {frontmatter.goal}
+          </p>
+        </Card>
 
-      {/* Optional Video Link / YouTube Embed */}
-      {frontmatter.video && (() => {
-        const ytId = getYouTubeId(frontmatter.video);
-        if (ytId) {
+        {/* Video slot (16:9, rounded 12px, bordered) when video exists */}
+        {frontmatter.video && (() => {
+          const ytId = getYouTubeId(frontmatter.video);
+          if (ytId) {
+            return (
+              <div className="my-6 overflow-hidden rounded-[12px] border border-border aspect-video">
+                <YouTube id={ytId} />
+              </div>
+            );
+          }
           return (
-            <div className="mb-8">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--custom-green)] block mb-2">
-                Video Demonstration
-              </span>
-              <YouTube id={ytId} />
+            <div className="my-6 p-4 rounded-[12px] border border-border bg-surface flex items-center justify-between">
+              <span className="text-sm font-semibold text-text">Video Demonstration:</span>
+              <a
+                href={frontmatter.video}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-bold text-accent hover:underline"
+              >
+                Watch Video &rarr;
+              </a>
             </div>
           );
-        }
-        return (
-          <div className="mb-8 p-4 rounded-lg border border-[var(--bs-border-color,#374151)] bg-body-tertiary flex items-center justify-between">
-            <span className="text-sm font-semibold">Video Demonstration:</span>
-            <a
-              href={frontmatter.video}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-bold text-[var(--custom-green)] hover:underline"
-            >
-              Watch Video &rarr;
-            </a>
-          </div>
-        );
-      })()}
+        })()}
+      </header>
 
-      {/* Cross-link box if it has a writeup */}
-      {resolvedWriteup && (
-        <aside className="deep-dive-box mb-8 p-4 rounded-r-lg border-l-4 border-[var(--custom-green)] bg-[var(--custom-green)]/5">
-          <span className="text-xs uppercase font-bold tracking-wider text-[var(--custom-green)] block mb-1">
-            Technical Write-Up Available
-          </span>
-          <div className="text-base font-medium">
-            Read the full write-up for this challenge:{" "}
-            <Link
-              href={`/blog/${resolvedWriteup.slug}`}
-              className="font-bold text-[var(--custom-green)] hover:underline"
-            >
-              {resolvedWriteup.title} &rarr;
-            </Link>
+      {/* Main Body Grid with Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left: MDX Prose */}
+        <div className="lg:col-span-8 flex flex-col">
+          <div className="prose max-w-none">
+            <MDXRemote source={content} components={mdxComponents} options={mdxRemoteOptions} />
           </div>
+        </div>
+
+        {/* Right: Sidebar Card (sticky on desktop, below the body on mobile) */}
+        <aside className="lg:col-span-4 lg:sticky lg:top-[88px] flex flex-col gap-4">
+          <Card className="p-6 flex flex-col gap-5">
+            {resolvedWriteup && (
+              <div className="flex flex-col gap-2 pb-4 border-b border-border/50">
+                <span className="label">Technical Write-up</span>
+                <Link
+                  href={`/blog/${resolvedWriteup.slug}`}
+                  className="text-accent font-semibold text-[15px] hover:underline"
+                >
+                  {resolvedWriteup.title} &rarr;
+                </Link>
+              </div>
+            )}
+            <div className="flex flex-col gap-2.5">
+              <span className="label">Tags</span>
+              <div className="flex flex-wrap gap-1.5">
+                {frontmatter.tags.map((tag) => (
+                  <Tag key={tag}>#{tag}</Tag>
+                ))}
+              </div>
+            </div>
+          </Card>
         </aside>
-      )}
-
-      {/* MDX Content Body */}
-      <div className="prose dark:prose-invert max-w-none">
-        <MDXRemote source={content} components={mdxComponents} options={mdxRemoteOptions} />
       </div>
 
       {/* Previous / Next Navigation */}
       {(prev || next) && (
-        <nav className="mt-12 pt-8 border-t border-[var(--bs-border-color,#374151)] flex flex-wrap items-center justify-between gap-4">
+        <nav className="mt-16 pt-8 border-t border-border flex flex-wrap items-center justify-between gap-4">
           {prev ? (
             <Link
               href={`/challenges/${prev.slug}`}
-              className="group flex flex-col text-left max-w-[45%] text-decoration-none no-underline"
+              className="group flex flex-col text-left max-w-[45%] no-underline"
             >
-              <span className="text-xs uppercase tracking-wider text-[var(--custom-green)] font-semibold">
+              <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold group-hover:text-primary transition-colors">
                 &larr; Previous Challenge
               </span>
-              <span className="text-sm font-medium high-contrast-text group-hover:underline line-clamp-1">
+              <span className="text-sm font-medium text-text group-hover:underline line-clamp-1 mt-1">
                 Week {prev.week}: {prev.title}
               </span>
             </Link>
@@ -204,12 +201,12 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
           {next ? (
             <Link
               href={`/challenges/${next.slug}`}
-              className="group flex flex-col text-right max-w-[45%] text-decoration-none no-underline ml-auto"
+              className="group flex flex-col text-right max-w-[45%] no-underline ml-auto"
             >
-              <span className="text-xs uppercase tracking-wider text-[var(--custom-green)] font-semibold">
+              <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold group-hover:text-primary transition-colors">
                 Next Challenge &rarr;
               </span>
-              <span className="text-sm font-medium high-contrast-text group-hover:underline line-clamp-1">
+              <span className="text-sm font-medium text-text group-hover:underline line-clamp-1 mt-1">
                 Week {next.week}: {next.title}
               </span>
             </Link>

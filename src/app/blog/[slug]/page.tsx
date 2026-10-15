@@ -6,6 +6,8 @@ import { getAdjacentPosts, getAllPosts, getPost } from "@/lib/content";
 import { calculateReadingTime } from "@/lib/reading-time";
 import { SITE_URL } from "@/lib/site";
 import CategoryBadge from "@/components/CategoryBadge";
+import Tag from "@/components/ui/Tag";
+import Card from "@/components/ui/Card";
 import { mdxComponents, mdxRemoteOptions } from "@/components/mdx-components";
 
 interface PageProps {
@@ -72,13 +74,13 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   const { frontmatter, content, resolvedChallenge } = post;
   const readingTime = calculateReadingTime(content);
-  const { prev, next } = getAdjacentPosts(slug);
-
   const formattedDate = new Intl.DateTimeFormat("en-US", {
-    month: "long",
+    month: "short",
     day: "numeric",
     year: "numeric",
   }).format(frontmatter.publishedAt);
+
+  const { prev, next } = getAdjacentPosts(slug);
 
   const blogPostingJsonLd = {
     "@context": "https://schema.org",
@@ -86,37 +88,36 @@ export default async function BlogPostPage({ params }: PageProps) {
     headline: frontmatter.title,
     description: frontmatter.summary,
     datePublished: frontmatter.publishedAt.toISOString(),
-    dateModified: frontmatter.publishedAt.toISOString(),
-    url: `${SITE_URL}/blog/${slug}`,
-    image: `${SITE_URL}/blog/${slug}/opengraph-image`,
     author: {
       "@type": "Person",
       name: "Abdulrahmon Sulaimon",
       url: SITE_URL,
     },
+    url: `${SITE_URL}/blog/${post.slug}`,
+    keywords: frontmatter.tags.join(", "),
   };
 
   return (
-    <article className="py-8 sm:py-12 max-w-3xl mx-auto">
+    <article className="w-full max-w-[1120px] mx-auto px-6 py-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingJsonLd) }}
       />
 
-      {/* Back button */}
+      {/* Muted mono back link */}
       <div className="mb-8">
         <Link
           href="/blog"
-          className="text-sm font-semibold text-[var(--custom-green)] hover:underline inline-flex items-center gap-1.5"
+          className="font-mono text-xs text-muted hover:text-text transition-colors inline-flex items-center gap-1.5"
         >
           <span>&larr; All posts</span>
         </Link>
       </div>
 
       {/* Header metadata */}
-      <header className="mb-8 pb-6 border-b border-[var(--bs-border-color,#374151)]">
+      <header className="mb-10 pb-8 border-b border-border">
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="flex items-center gap-2 text-sm opacity-75 font-mono">
+          <div className="flex items-center gap-2 text-xs font-mono text-muted">
             <time dateTime={frontmatter.publishedAt.toISOString()}>
               {formattedDate}
             </time>
@@ -126,23 +127,18 @@ export default async function BlogPostPage({ params }: PageProps) {
           <CategoryBadge category={frontmatter.category} section="blog" />
         </div>
 
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 leading-tight high-contrast-text">
+        <h1 className="font-display font-extrabold text-[36px] sm:text-[44px] lg:text-[52px] text-text max-w-[820px] leading-tight mb-4">
           {frontmatter.title}
         </h1>
 
-        <p className="text-lg opacity-85 leading-relaxed high-contrast-text mb-4">
+        <p className="text-[18px] text-muted leading-relaxed max-w-2xl mb-6">
           {frontmatter.summary}
         </p>
 
         {frontmatter.tags && frontmatter.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-2">
             {frontmatter.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2.5 py-0.5 rounded-full text-xs bg-[var(--bs-border-color,#374151)]/20 opacity-80"
-              >
-                #{tag}
-              </span>
+              <Tag key={tag}>#{tag}</Tag>
             ))}
           </div>
         )}
@@ -150,39 +146,39 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       {/* Cross-link box if part of challenge */}
       {resolvedChallenge && (
-        <aside className="deep-dive-box mb-8 p-4 rounded-r-lg border-l-4 border-[var(--custom-green)] bg-[var(--custom-green)]/5">
-          <span className="text-xs uppercase font-bold tracking-wider text-[var(--custom-green)] block mb-1">
+        <Card isLive={true} className="mb-10 p-5">
+          <span className="font-mono text-xs uppercase tracking-wider text-accent font-semibold block mb-1">
             Part of a Challenge
           </span>
-          <div className="text-base font-medium">
+          <div className="text-[15px] text-text">
             This article was written as the technical write-up for{" "}
             <Link
               href={`/challenges/${resolvedChallenge.slug}`}
-              className="font-bold text-[var(--custom-green)] hover:underline"
+              className="font-bold text-accent hover:underline inline-flex items-center gap-1"
             >
-              {resolvedChallenge.title} &rarr;
+              <span>{resolvedChallenge.title} &rarr;</span>
             </Link>
           </div>
-        </aside>
+        </Card>
       )}
 
       {/* MDX Content Body */}
-      <div className="prose dark:prose-invert max-w-none">
+      <div className="prose max-w-3xl">
         <MDXRemote source={content} components={mdxComponents} options={mdxRemoteOptions} />
       </div>
 
       {/* Previous / Next Navigation */}
       {(prev || next) && (
-        <nav className="mt-12 pt-8 border-t border-[var(--bs-border-color,#374151)] flex flex-wrap items-center justify-between gap-4">
+        <nav className="mt-16 pt-8 border-t border-border flex flex-wrap items-center justify-between gap-4 max-w-3xl">
           {prev ? (
             <Link
               href={`/blog/${prev.slug}`}
-              className="group flex flex-col text-left max-w-[45%] text-decoration-none no-underline"
+              className="group flex flex-col text-left max-w-[45%] no-underline"
             >
-              <span className="text-xs uppercase tracking-wider text-[var(--custom-green)] font-semibold">
+              <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold group-hover:text-primary transition-colors">
                 &larr; Previous Post
               </span>
-              <span className="text-sm font-medium high-contrast-text group-hover:underline line-clamp-1">
+              <span className="text-sm font-medium text-text group-hover:underline line-clamp-1 mt-1">
                 {prev.title}
               </span>
             </Link>
@@ -192,12 +188,12 @@ export default async function BlogPostPage({ params }: PageProps) {
           {next ? (
             <Link
               href={`/blog/${next.slug}`}
-              className="group flex flex-col text-right max-w-[45%] text-decoration-none no-underline ml-auto"
+              className="group flex flex-col text-right max-w-[45%] no-underline ml-auto"
             >
-              <span className="text-xs uppercase tracking-wider text-[var(--custom-green)] font-semibold">
+              <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold group-hover:text-primary transition-colors">
                 Next Post &rarr;
               </span>
-              <span className="text-sm font-medium high-contrast-text group-hover:underline line-clamp-1">
+              <span className="text-sm font-medium text-text group-hover:underline line-clamp-1 mt-1">
                 {next.title}
               </span>
             </Link>

@@ -6,6 +6,7 @@ import { PostItem } from "@/lib/content";
 import { CATEGORIES } from "@/lib/site";
 import PostCard from "./PostCard";
 import FilterBar, { FilterOption, TagOption } from "./FilterBar";
+import Button from "@/components/ui/Button";
 
 interface BlogListProps {
   posts: PostItem[];
@@ -57,8 +58,8 @@ function BlogListInner({ posts }: BlogListProps) {
 
   if (posts.length === 0) {
     return (
-      <div className="text-center py-16 border border-dashed border-[var(--bs-border-color,#374151)] rounded-lg">
-        <p className="text-base opacity-75 high-contrast-text">No articles published yet. Check back soon!</p>
+      <div className="text-center py-16 border border-dashed border-border rounded-[16px] bg-surface">
+        <p className="text-base text-muted">No articles published yet. Check back soon!</p>
       </div>
     );
   }
@@ -73,17 +74,17 @@ function BlogListInner({ posts }: BlogListProps) {
       />
 
       {filteredPosts.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-[var(--bs-border-color,#374151)] rounded-lg">
-          <p className="text-base opacity-85 high-contrast-text mb-3">
+        <div className="text-center py-16 border border-dashed border-border rounded-[16px] bg-surface flex flex-col items-center gap-4">
+          <p className="text-base text-muted">
             No posts found matching the selected filters.
           </p>
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="primary"
             onClick={() => router.replace(pathname, { scroll: false })}
-            className="btn btn-sm btn-green fw-bold px-4"
           >
             Clear filters
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -99,8 +100,8 @@ function BlogListInner({ posts }: BlogListProps) {
 export default function BlogList({ posts }: BlogListProps) {
   if (posts.length === 0) {
     return (
-      <div className="text-center py-16 border border-dashed border-[var(--bs-border-color,#374151)] rounded-lg">
-        <p className="text-base opacity-75 high-contrast-text">No articles published yet. Check back soon!</p>
+      <div className="text-center py-16 border border-dashed border-border rounded-[16px] bg-surface">
+        <p className="text-base text-muted">No articles published yet. Check back soon!</p>
       </div>
     );
   }

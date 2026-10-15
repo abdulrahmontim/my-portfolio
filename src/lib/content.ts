@@ -11,6 +11,7 @@ import {
 export interface ResolvedRef {
   slug: string;
   title: string;
+  week?: number;
 }
 
 export interface ChallengeItem {
@@ -221,6 +222,7 @@ function loadAllRawData() {
         resolvedChallenge = {
           slug: referencedChallenge.slug,
           title: referencedChallenge.frontmatter.title,
+          week: referencedChallenge.frontmatter.week,
         };
       }
     }

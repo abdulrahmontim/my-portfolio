@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ChallengeItem } from "@/lib/content";
-import CategoryBadge from "./CategoryBadge";
+import Card from "@/components/ui/Card";
+import Tag from "@/components/ui/Tag";
 import StatusBadge from "./StatusBadge";
+import CategoryBadge from "./CategoryBadge";
 
 interface ChallengeCardProps {
   challenge: ChallengeItem;
@@ -13,9 +15,9 @@ export default function ChallengeCard({ challenge, headingLevel = "h2" }: Challe
   const HeadingTag = headingLevel;
 
   return (
-    <article className="border border-[var(--bs-border-color,#374151)] rounded-lg p-6 bg-body-tertiary hover:border-[var(--custom-green)] transition-all duration-300 flex flex-col h-full group">
+    <Card href={`/challenges/${slug}`} className="flex flex-col h-full group">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-[var(--custom-green)]">
+        <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold">
           Week {frontmatter.week}
         </span>
         <div className="flex items-center gap-2">
@@ -24,44 +26,38 @@ export default function ChallengeCard({ challenge, headingLevel = "h2" }: Challe
         </div>
       </div>
 
-      <HeadingTag className="text-xl font-bold mb-2 group-hover:text-[var(--custom-green)] transition-colors">
-        <Link href={`/challenges/${slug}`} className="hover:underline text-inherit no-underline">
-          {frontmatter.title}
-        </Link>
+      <HeadingTag className="font-display font-bold text-[22px] text-text mb-2 group-hover:text-primary transition-colors leading-snug">
+        {frontmatter.title}
       </HeadingTag>
 
-      <p className="text-sm opacity-80 mb-4 line-clamp-3 flex-grow">
+      <p className="text-muted text-[15px] leading-relaxed mb-4 line-clamp-3 flex-grow">
         {frontmatter.summary}
       </p>
 
       {resolvedWriteup && (
-        <div className="mb-4 text-xs font-medium text-[var(--custom-green)]">
+        <div className="mb-4">
           <Link
             href={`/blog/${resolvedWriteup.slug}`}
-            className="hover:underline inline-flex items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+            className="text-accent hover:underline text-xs font-semibold inline-flex items-center gap-1"
           >
             <span>Read write-up: {resolvedWriteup.title} &rarr;</span>
           </Link>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-[var(--bs-border-color,#374151)]/50 mt-auto text-xs">
-        <span className="capitalize opacity-75">
-          Difficulty: <strong className="opacity-100">{frontmatter.difficulty}</strong>
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-border/50 mt-auto text-xs">
+        <span className="font-mono text-xs text-muted capitalize">
+          Difficulty: <strong className="text-text font-semibold">{frontmatter.difficulty}</strong>
         </span>
         {frontmatter.tags && frontmatter.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {frontmatter.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-0.5 rounded text-[11px] bg-[var(--bs-border-color,#374151)]/20 opacity-80"
-              >
-                #{tag}
-              </span>
+              <Tag key={tag}>#{tag}</Tag>
             ))}
           </div>
         )}
       </div>
-    </article>
+    </Card>
   );
 }

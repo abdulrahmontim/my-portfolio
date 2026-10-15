@@ -9,28 +9,26 @@ export default function HomeWriting() {
   }
 
   return (
-    <section id="writing" className="py-5 border-top">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <h2 className="fw-bold section-title high-contrast-text mb-0">Latest Writing</h2>
-        <Link href="/blog" className="text-green fw-bold text-decoration-none d-none d-sm-inline-block">
+    <section id="writing" className="w-full max-w-[1120px] mx-auto px-6 py-12">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col gap-2">
+          <span className="label">Writing</span>
+          <h2 className="font-display font-bold text-[36px] text-text">
+            Latest from the blog
+          </h2>
+        </div>
+        <Link
+          href="/blog"
+          className="text-secondary hover:text-primary font-semibold text-sm inline-flex items-center gap-1 transition-colors"
+        >
           View all posts &rarr;
         </Link>
       </div>
 
-      <div className="row g-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {posts.map((post) => (
-          <div key={post.slug} className="col-12 col-md-6 col-lg-4 d-flex">
-            <div className="w-100">
-              <PostCard post={post} headingLevel="h3" />
-            </div>
-          </div>
+          <PostCard key={post.slug} post={post} headingLevel="h3" />
         ))}
-      </div>
-
-      <div className="text-center mt-4 pt-2 d-sm-none">
-        <Link href="/blog" className="btn btn-outline-green fw-bold px-4 py-2">
-          View all posts &rarr;
-        </Link>
       </div>
     </section>
   );

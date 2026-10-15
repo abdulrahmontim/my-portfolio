@@ -56,14 +56,17 @@ export default function FilterBar({
     router.replace(pathname, { scroll: false });
   };
 
+  const chipActiveClasses =
+    "border border-primary text-primary bg-primary-glow font-mono text-xs font-semibold px-3 py-1 rounded-full transition-all cursor-pointer";
+  const chipInactiveClasses =
+    "border border-border text-muted hover:text-text hover:border-muted/50 bg-surface2 font-mono text-xs font-medium px-3 py-1 rounded-full transition-all cursor-pointer";
+
   return (
-    <div className="mb-8 space-y-4 p-4 sm:p-5 rounded-lg border border-[var(--bs-border-color,#374151)] bg-body-tertiary">
+    <div className="mb-8 space-y-4 p-5 rounded-[16px] border border-border bg-surface">
       {/* Category Filter */}
       {categories.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--custom-green)] mr-1">
-            Category:
-          </span>
+          <span className="label mr-1">Category:</span>
           <button
             type="button"
             aria-pressed={!activeCategory}
@@ -75,11 +78,7 @@ export default function FilterBar({
                 router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
               }
             }}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-              !activeCategory
-                ? "bg-[var(--custom-green)] text-white shadow-sm"
-                : "border border-[var(--bs-border-color,#374151)] bg-body opacity-85 hover:border-[var(--custom-green)]"
-            }`}
+            className={!activeCategory ? chipActiveClasses : chipInactiveClasses}
           >
             All ({totalCount})
           </button>
@@ -91,11 +90,7 @@ export default function FilterBar({
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => setFilter("category", cat.key)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  isActive
-                    ? "bg-[var(--custom-green)] text-white shadow-sm"
-                    : "border border-[var(--bs-border-color,#374151)] bg-body opacity-85 hover:border-[var(--custom-green)]"
-                }`}
+                className={isActive ? chipActiveClasses : chipInactiveClasses}
               >
                 {cat.label} ({cat.count})
               </button>
@@ -107,9 +102,7 @@ export default function FilterBar({
       {/* Status Filter (challenges only) */}
       {statuses && statuses.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--custom-green)] mr-1">
-            Status:
-          </span>
+          <span className="label mr-1">Status:</span>
           <button
             type="button"
             aria-pressed={!activeStatus}
@@ -121,11 +114,7 @@ export default function FilterBar({
                 router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
               }
             }}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-              !activeStatus
-                ? "bg-[var(--custom-green)] text-white shadow-sm"
-                : "border border-[var(--bs-border-color,#374151)] bg-body opacity-85 hover:border-[var(--custom-green)]"
-            }`}
+            className={!activeStatus ? chipActiveClasses : chipInactiveClasses}
           >
             All
           </button>
@@ -137,11 +126,7 @@ export default function FilterBar({
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => setFilter("status", stat.key)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  isActive
-                    ? "bg-[var(--custom-green)] text-white shadow-sm"
-                    : "border border-[var(--bs-border-color,#374151)] bg-body opacity-85 hover:border-[var(--custom-green)]"
-                }`}
+                className={isActive ? chipActiveClasses : chipInactiveClasses}
               >
                 {stat.label} ({stat.count})
               </button>
@@ -152,10 +137,8 @@ export default function FilterBar({
 
       {/* Tag Filter */}
       {tags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--bs-border-color,#374151)]/40">
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--custom-green)] mr-1">
-            Tags:
-          </span>
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/50">
+          <span className="label mr-1">Tags:</span>
           {tags.map((tag) => {
             const isActive = activeTag === tag.name;
             return (
@@ -164,11 +147,7 @@ export default function FilterBar({
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => setFilter("tag", tag.name)}
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
-                  isActive
-                    ? "bg-[var(--custom-green)] text-white shadow-sm font-semibold"
-                    : "border border-[var(--bs-border-color,#374151)] bg-body opacity-75 hover:opacity-100 hover:border-[var(--custom-green)]"
-                }`}
+                className={isActive ? chipActiveClasses : chipInactiveClasses}
               >
                 #{tag.name} ({tag.count})
               </button>
@@ -179,14 +158,14 @@ export default function FilterBar({
 
       {/* Filter Status Summary & Clear Action */}
       {hasActiveFilters && (
-        <div className="flex items-center justify-between pt-2 border-t border-[var(--bs-border-color,#374151)]/40 text-xs">
-          <span className="opacity-80">
-            Showing <strong>{filteredCount}</strong> of <strong>{totalCount}</strong> items
+        <div className="flex items-center justify-between pt-3 border-t border-border/50 text-xs font-mono">
+          <span className="text-muted">
+            Showing <strong className="text-text">{filteredCount}</strong> of <strong className="text-text">{totalCount}</strong> items
           </span>
           <button
             type="button"
             onClick={clearFilters}
-            className="text-[var(--custom-green)] hover:underline font-semibold flex items-center gap-1"
+            className="text-accent hover:underline font-semibold flex items-center gap-1 cursor-pointer"
           >
             <span>&times; Clear filters</span>
           </button>

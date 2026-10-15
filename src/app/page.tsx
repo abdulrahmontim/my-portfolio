@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Hero from "@/components/home/Hero";
 import Skills from "@/components/home/Skills";
-import Projects from "@/components/home/Projects";
 import HomeChallenge from "@/components/home/HomeChallenge";
+import Projects from "@/components/home/Projects";
 import HomeWriting from "@/components/home/HomeWriting";
 import Contact from "@/components/home/Contact";
 import { siteConfig, SOCIAL_LINKS, SITE_URL } from "@/lib/site";
@@ -46,8 +46,8 @@ export default function Home() {
       />
       <Hero />
       <Skills />
-      <Projects />
       <HomeChallenge />
+      <Projects />
       <HomeWriting />
       <Contact />
     </>
