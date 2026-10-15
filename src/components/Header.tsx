@@ -83,7 +83,7 @@ export default function Header() {
   return (
     <nav className="navbar navbar-expand-lg border-bottom sticky-top bg-body">
       <div className="container">
-        <Link className="navbar-brand" href="#">
+        <Link className="navbar-brand" href="/">
           {/* Plain img used to match exact rendering and CSS inversion transitions */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

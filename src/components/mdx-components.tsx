@@ -115,6 +115,14 @@ function CustomTable({ children, ...props }: React.TableHTMLAttributes<HTMLTable
 function CustomLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
   if (!href) return <a {...props}>{children}</a>;
 
+  if (href.startsWith("mailto:")) {
+    return (
+      <a href={href} className="text-[var(--custom-green)] hover:underline" {...props}>
+        {children}
+      </a>
+    );
+  }
+
   const isExternal = href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//");
 
   if (isExternal) {

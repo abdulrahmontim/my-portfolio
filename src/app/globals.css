@@ -229,7 +229,7 @@ html {
 }
 
 /* --- GLOBAL FIX FOR NAV COVERING SECTION TITLES --- */
-section {
+section, [id] {
     scroll-margin-top: 90px; /* Prevents the sticky navbar from covering titles when jumping to sections */
 }
 

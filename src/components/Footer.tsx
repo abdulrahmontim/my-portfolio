@@ -1,4 +1,5 @@
-import { siteConfig, SOCIAL_LINKS } from "@/lib/site";
+import Link from "next/link";
+import { siteConfig, SOCIAL_LINKS, EMAIL_LINK } from "@/lib/site";
 
 export default function Footer() {
   return (
@@ -22,13 +23,19 @@ export default function Footer() {
           ))}
           <span className="opacity-50">&bull;</span>
           <a
+            href={EMAIL_LINK}
+            className="text-green text-decoration-none fw-medium"
+          >
+            Email
+          </a>
+          <span className="opacity-50">&bull;</span>
+          <Link
             href="/rss.xml"
-            target="_blank"
-            rel="noopener noreferrer"
+            prefetch={false}
             className="text-green text-decoration-none fw-medium"
           >
             RSS
-          </a>
+          </Link>
         </div>
       </div>
     </footer>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { siteConfig } from "@/lib/site";
 
 export default function Hero() {
@@ -14,7 +15,7 @@ export default function Hero() {
           </p>
 
           <div className="d-flex flex-wrap gap-3">
-            <a href="#contact" className="btn btn-green fw-bold px-4 py-2">Get in Touch</a>
+            <Link href="/#contact" className="btn btn-green fw-bold px-4 py-2">Get in Touch</Link>
             <a
               href={siteConfig.links.github}
               target="_blank"
