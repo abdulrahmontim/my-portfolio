@@ -267,3 +267,69 @@ export function getPost(slug: string): PostItem | null {
   const posts = getAllPosts();
   return posts.find((p) => p.slug === slug) || null;
 }
+
+export interface AdjacentItem {
+  slug: string;
+  title: string;
+  week?: number;
+}
+
+export function getAdjacentPosts(slug: string): {
+  prev: AdjacentItem | null;
+  next: AdjacentItem | null;
+} {
+  const posts = getAllPosts();
+  const index = posts.findIndex((p) => p.slug === slug);
+  if (index === -1) {
+    return { prev: null, next: null };
+  }
+  // posts is sorted descending by publishedAt (newest first)
+  // prev = older post (earlier in time, higher index)
+  // next = newer post (later in time, lower index)
+  const prev =
+    index < posts.length - 1
+      ? {
+          slug: posts[index + 1].slug,
+          title: posts[index + 1].frontmatter.title,
+        }
+      : null;
+  const next =
+    index > 0
+      ? {
+          slug: posts[index - 1].slug,
+          title: posts[index - 1].frontmatter.title,
+        }
+      : null;
+  return { prev, next };
+}
+
+export function getAdjacentChallenges(slug: string): {
+  prev: AdjacentItem | null;
+  next: AdjacentItem | null;
+} {
+  const challenges = getAllChallenges();
+  const index = challenges.findIndex((c) => c.slug === slug);
+  if (index === -1) {
+    return { prev: null, next: null };
+  }
+  // challenges is sorted descending by week (highest week first)
+  // prev = earlier week (lower week number, higher index)
+  // next = later week (higher week number, lower index)
+  const prev =
+    index < challenges.length - 1
+      ? {
+          slug: challenges[index + 1].slug,
+          title: challenges[index + 1].frontmatter.title,
+          week: challenges[index + 1].frontmatter.week,
+        }
+      : null;
+  const next =
+    index > 0
+      ? {
+          slug: challenges[index - 1].slug,
+          title: challenges[index - 1].frontmatter.title,
+          week: challenges[index - 1].frontmatter.week,
+        }
+      : null;
+  return { prev, next };
+}
