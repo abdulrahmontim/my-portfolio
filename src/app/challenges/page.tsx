@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getAllChallenges } from "@/lib/content";
-import ChallengeCard from "@/components/ChallengeCard";
+import ChallengeList from "@/components/ChallengeList";
 
 export const metadata: Metadata = {
   title: "Challenges | Abdulrahmon Sulaimon",
@@ -22,17 +22,7 @@ export default function ChallengesPage() {
         </p>
       </header>
 
-      {challenges.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-[var(--bs-border-color,#374151)] rounded-lg">
-          <p className="text-base opacity-75 high-contrast-text">No challenges logged yet. Stay tuned!</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {challenges.map((challenge) => (
-            <ChallengeCard key={challenge.slug} challenge={challenge} />
-          ))}
-        </div>
-      )}
+      <ChallengeList challenges={challenges} />
     </div>
   );
 }

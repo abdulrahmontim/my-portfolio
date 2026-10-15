@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/content";
-import PostCard from "@/components/PostCard";
+import BlogList from "@/components/BlogList";
 
 export const metadata: Metadata = {
   title: "Blog | Abdulrahmon Sulaimon",
@@ -22,17 +22,7 @@ export default function BlogPage() {
         </p>
       </header>
 
-      {posts.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-[var(--bs-border-color,#374151)] rounded-lg">
-          <p className="text-base opacity-75 high-contrast-text">No articles published yet. Check back soon!</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {posts.map((post) => (
-            <PostCard key={post.slug} post={post} />
-          ))}
-        </div>
-      )}
+      <BlogList posts={posts} />
     </div>
   );
 }
