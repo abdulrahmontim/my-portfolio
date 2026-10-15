@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -111,13 +112,15 @@ export default function RootLayout({
     >
       <head>
         <style dangerouslySetInnerHTML={{ __html: themeCss }} />
-        <script
+      </head>
+      <body>
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('bs-theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);}catch(e){}})();`,
           }}
         />
-      </head>
-      <body>
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>

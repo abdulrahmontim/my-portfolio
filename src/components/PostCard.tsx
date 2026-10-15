@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { PostItem } from "@/lib/content";
 import { calculateReadingTime } from "@/lib/reading-time";

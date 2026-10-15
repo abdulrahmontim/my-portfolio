@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ChallengeItem } from "@/lib/content";
 import Card from "@/components/ui/Card";
