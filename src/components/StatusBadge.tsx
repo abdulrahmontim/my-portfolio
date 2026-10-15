@@ -11,27 +11,27 @@ const statusConfig: Record<
 > = {
   planned: {
     label: "Planned",
-    classes: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    classes: "bg-surface2 text-muted border-border",
   },
   building: {
     label: "Building",
-    classes: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    classes: "bg-accent-tint text-accent border-accent-border",
   },
   done: {
     label: "Done",
-    classes: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    classes: "bg-primary-glow text-primary border-primary/30",
   },
 };
 
 export default function StatusBadge({ status, className = "" }: StatusBadgeProps) {
   const config = statusConfig[status] || {
     label: status,
-    classes: "bg-gray-500/10 text-gray-400 border-gray-500/30",
+    classes: "bg-surface2 text-muted border-border",
   };
 
   return (
     <span
-      className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full border ${config.classes} ${className}`}
+      className={`inline-flex items-center rounded-[6px] border font-mono text-[12px] font-medium px-2.5 py-0.5 leading-tight ${config.classes} ${className}`}
     >
       {config.label}
     </span>
