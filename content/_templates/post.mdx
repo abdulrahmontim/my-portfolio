@@ -1,9 +1,9 @@
 ---
 # Title of the post (required string)
-title: "Blog Post Title Template"
+title: "Post Title Template"
 
 # Short summary of the article (required string)
-summary: "A concise overview of the insights, experiment results, or concept explored in this article."
+summary: "A concise overview of the insights, experiment results, or concept explored."
 
 # Publication date (required ISO date string YYYY-MM-DD)
 publishedAt: "2026-10-15"
@@ -12,13 +12,20 @@ publishedAt: "2026-10-15"
 category: "software"
 
 # List of tags (string array, default: [])
-tags: ["software", "architecture"]
+tags: ["software", "backend"]
+
+# Post type: "post" | "challenge" (default: "post")
+type: "post"
 
 # Draft mode: set true to hide in production, false to publish (default: false)
 draft: true
 
-# Optional: slug of an associated challenge (e.g., "week-01-example-challenge")
-# challenge: "example-challenge-slug"
+# --- Challenge-only optional fields (when type is "challenge") ---
+# goal: "Verifiable definition of done for the challenge (required if type is challenge)"
+# status: "planned" # "planned" | "building" | "done" (required if type is challenge)
+# week: 1           # Non-negative integer (optional)
+# difficulty: "medium" # "easy" | "medium" | "hard" (optional)
+# video: "https://www.youtube.com/watch?v=example" # Valid URL (optional)
 ---
 
 Write the content of the article here using Markdown or MDX components.

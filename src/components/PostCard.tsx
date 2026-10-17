@@ -11,7 +11,7 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, headingLevel = "h2" }: PostCardProps) {
-  const { slug, frontmatter, content, resolvedChallenge } = post;
+  const { slug, frontmatter, content } = post;
   const readingTime = calculateReadingTime(content);
   const formattedDate = new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -42,18 +42,6 @@ export default function PostCard({ post, headingLevel = "h2" }: PostCardProps) {
       <p className="text-muted text-[15px] leading-relaxed mb-4 line-clamp-3 flex-grow">
         {frontmatter.summary}
       </p>
-
-      {resolvedChallenge && (
-        <div className="mb-4">
-          <span className="text-muted text-xs font-medium inline-flex items-center gap-1">
-            {resolvedChallenge.week !== undefined ? (
-              <span>Part of week {resolvedChallenge.week} &rarr;</span>
-            ) : (
-              <span>Part of challenge: {resolvedChallenge.title} &rarr;</span>
-            )}
-          </span>
-        </div>
-      )}
 
       {frontmatter.tags && frontmatter.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-4 border-t border-border/50 mt-auto">

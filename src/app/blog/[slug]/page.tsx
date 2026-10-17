@@ -7,7 +7,6 @@ import { calculateReadingTime } from "@/lib/reading-time";
 import { SITE_URL } from "@/lib/site";
 import CategoryBadge from "@/components/CategoryBadge";
 import Tag from "@/components/ui/Tag";
-import Card from "@/components/ui/Card";
 import { mdxComponents, mdxRemoteOptions } from "@/components/mdx-components";
 
 interface PageProps {
@@ -74,7 +73,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     notFound();
   }
 
-  const { frontmatter, content, resolvedChallenge } = post;
+  const { frontmatter, content } = post;
   const readingTime = calculateReadingTime(content);
   const formattedDate = new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -145,24 +144,6 @@ export default async function BlogPostPage({ params }: PageProps) {
           </div>
         )}
       </header>
-
-      {/* Cross-link box if part of challenge */}
-      {resolvedChallenge && (
-        <Card className="mb-10 p-5">
-          <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold block mb-1">
-            Part of a Challenge
-          </span>
-          <div className="text-[15px] text-text">
-            This article was written as the technical write-up for{" "}
-            <Link
-              href={`/challenges/${resolvedChallenge.slug}`}
-              className="font-medium text-text underline decoration-border hover:text-primary hover:decoration-primary inline-flex items-center gap-1"
-            >
-              <span>{resolvedChallenge.title} &rarr;</span>
-            </Link>
-          </div>
-        </Card>
-      )}
 
       {/* MDX Content Body */}
       <div className="prose max-w-3xl">
