@@ -104,73 +104,59 @@ export default function Header() {
     setIsOpen(false);
   };
 
-  const isChallengesActive =
-    pathname === "/challenges" || pathname.startsWith("/challenges/");
   const isBlogActive = pathname === "/blog" || pathname.startsWith("/blog/");
 
   return (
     <header className="sticky top-0 z-50 h-[68px] border-b border-border bg-bg/85 backdrop-blur-md">
-      <div className="max-w-[1120px] mx-auto px-6 h-full flex items-center justify-between">
+      <div className="max-w-[720px] mx-auto px-6 h-full flex items-center justify-between">
         {/* Left: Logo */}
         <Link
           href="/"
           onClick={closeMenu}
           aria-label="Home"
-          className="flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+          className="flex items-center rounded focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
         >
           <Logo size={36} />
         </Link>
 
-        {/* Right (Desktop): Nav links + Theme Toggle + Contact Button */}
+        {/* Right (Desktop): Work, Blog, Contact, Theme Toggle */}
         <nav
-          className="hidden md:flex items-center gap-6 h-full"
+          className="hidden md:flex items-center gap-6 h-full text-[15px]"
           aria-label="Main navigation"
         >
           <Link
-            href="/#skills"
+            href="/#work"
             onClick={closeMenu}
-            className="text-[15px] font-medium text-muted hover:text-text transition-colors h-[68px] flex items-center relative focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
           >
-            Skills
-          </Link>
-          <Link
-            href="/#projects"
-            onClick={closeMenu}
-            className="text-[15px] font-medium text-muted hover:text-text transition-colors h-[68px] flex items-center relative focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-          >
-            Projects
-          </Link>
-          <Link
-            href="/challenges"
-            onClick={closeMenu}
-            aria-current={isChallengesActive ? "page" : undefined}
-            className={`text-[15px] font-medium transition-colors h-[68px] flex items-center relative focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 ${
-              isChallengesActive
-                ? "text-text after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary"
-                : "text-muted hover:text-text"
-            }`}
-          >
-            Challenges
+            Work
           </Link>
           <Link
             href="/blog"
             onClick={closeMenu}
             aria-current={isBlogActive ? "page" : undefined}
-            className={`text-[15px] font-medium transition-colors h-[68px] flex items-center relative focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 ${
+            className={`transition-colors focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 ${
               isBlogActive
-                ? "text-text after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary"
-                : "text-muted hover:text-text"
+                ? "text-text underline decoration-2 decoration-primary underline-offset-[3px]"
+                : "text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary"
             }`}
           >
             Blog
           </Link>
+          <Link
+            href="/#contact"
+            onClick={closeMenu}
+            className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+          >
+            Contact
+          </Link>
 
-          {/* Theme Toggle Button */}
+          {/* Theme Toggle Button (icon only, no border) */}
           <button
             type="button"
             onClick={toggleTheme}
             id="themeToggle"
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-muted hover:text-text hover:bg-surface border border-border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            className="p-1.5 flex items-center justify-center text-muted hover:text-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
             aria-label="Toggle Theme"
             title={
               theme === "light"
@@ -180,23 +166,14 @@ export default function Header() {
           >
             <ThemeIcon theme={theme} />
           </button>
-
-          {/* Small primary Contact button */}
-          <Link
-            href="/#contact"
-            onClick={closeMenu}
-            className="h-[36px] px-5 rounded-[10px] bg-primary text-on-primary font-semibold text-[15px] inline-flex items-center justify-center hover:bg-primary-hover hover:-translate-y-[1px] transition-all focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-          >
-            Contact
-          </Link>
         </nav>
 
         {/* Mobile Controls (<768px): Theme toggle + Hamburger */}
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-3 md:hidden">
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-muted hover:text-text hover:bg-surface border border-border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            className="p-1.5 flex items-center justify-center text-muted hover:text-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
             aria-label="Toggle Theme"
             title={
               theme === "light"
@@ -213,7 +190,7 @@ export default function Header() {
             aria-expanded={isOpen}
             aria-controls="mobile-navigation"
             aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-muted hover:text-text hover:bg-surface border border-border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            className="p-1.5 flex items-center justify-center text-muted hover:text-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
           >
             {isOpen ? (
               <svg
@@ -253,53 +230,40 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Drawer Sheet */}
+      {/* Mobile Drawer */}
       {isOpen && (
         <div
           id="mobile-navigation"
-          className="absolute top-[68px] left-0 right-0 bg-surface border-b border-border shadow-2xl px-6 py-4 flex flex-col md:hidden animate-in slide-in-from-top-2 duration-150"
+          className="absolute top-[68px] left-0 right-0 bg-surface border-b border-border shadow-xl px-6 py-4 flex flex-col gap-4 md:hidden"
         >
-          <Link
-            href="/#skills"
-            onClick={closeMenu}
-            className="flex items-center h-[52px] text-[17px] font-medium text-muted hover:text-text border-b border-border/50 transition-colors"
-          >
-            Skills
-          </Link>
-          <Link
-            href="/#projects"
-            onClick={closeMenu}
-            className="flex items-center h-[52px] text-[17px] font-medium text-muted hover:text-text border-b border-border/50 transition-colors"
-          >
-            Projects
-          </Link>
-          <Link
-            href="/challenges"
-            onClick={closeMenu}
-            aria-current={isChallengesActive ? "page" : undefined}
-            className={`flex items-center h-[52px] text-[17px] font-medium border-b border-border/50 transition-colors ${
-              isChallengesActive ? "text-primary font-semibold" : "text-muted hover:text-text"
-            }`}
-          >
-            Challenges
-          </Link>
-          <Link
-            href="/blog"
-            onClick={closeMenu}
-            aria-current={isBlogActive ? "page" : undefined}
-            className={`flex items-center h-[52px] text-[17px] font-medium border-b border-border/50 transition-colors ${
-              isBlogActive ? "text-primary font-semibold" : "text-muted hover:text-text"
-            }`}
-          >
-            Blog
-          </Link>
-          <Link
-            href="/#contact"
-            onClick={closeMenu}
-            className="h-[44px] mt-4 flex items-center justify-center bg-primary text-on-primary rounded-[10px] font-semibold text-[15px] hover:bg-primary-hover transition-colors"
-          >
-            Contact
-          </Link>
+          <div className="max-w-[720px] mx-auto w-full flex flex-col gap-4">
+            <Link
+              href="/#work"
+              onClick={closeMenu}
+              className="text-base text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors py-2"
+            >
+              Work
+            </Link>
+            <Link
+              href="/blog"
+              onClick={closeMenu}
+              aria-current={isBlogActive ? "page" : undefined}
+              className={`text-base py-2 transition-colors ${
+                isBlogActive
+                  ? "text-text underline decoration-2 decoration-primary underline-offset-[3px]"
+                  : "text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary"
+              }`}
+            >
+              Blog
+            </Link>
+            <Link
+              href="/#contact"
+              onClick={closeMenu}
+              className="text-base text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors py-2"
+            >
+              Contact
+            </Link>
+          </div>
         </div>
       )}
     </header>

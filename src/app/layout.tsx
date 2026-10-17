@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
-import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
-const fontDisplay = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
-  variable: "--font-display",
-  display: "swap",
-});
 
 const fontSans = Instrument_Sans({
   subsets: ["latin"],
@@ -107,7 +100,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-bs-theme="dark"
-      className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable}`}
+      className={`${fontSans.variable} ${fontMono.variable}`}
       suppressHydrationWarning
     >
       <head>

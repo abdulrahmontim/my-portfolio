@@ -100,19 +100,19 @@ export default async function BlogPostPage({ params }: PageProps) {
   };
 
   return (
-    <article className="w-full max-w-[1120px] mx-auto px-6 py-12">
+    <article className="w-full max-w-[720px] mx-auto px-6 py-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingJsonLd) }}
       />
 
       {/* Muted mono back link */}
-      <div className="mb-8">
+      <div className="mb-6">
         <Link
           href="/blog"
-          className="font-mono text-xs text-muted hover:text-text transition-colors inline-flex items-center gap-1.5"
+          className="text-muted hover:text-primary text-xs font-mono transition-colors inline-flex items-center gap-1.5"
         >
-          <span>&larr; All posts</span>
+          <span>&larr; Blog</span>
         </Link>
       </div>
 
@@ -129,7 +129,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           <CategoryBadge category={frontmatter.category} section="blog" />
         </div>
 
-        <h1 className="font-display font-extrabold text-[36px] sm:text-[44px] lg:text-[52px] text-text max-w-[820px] leading-tight mb-4">
+        <h1 className="text-[32px] font-semibold text-text leading-[1.2] mb-4">
           {frontmatter.title}
         </h1>
 
