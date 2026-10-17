@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { PostItem } from "@/lib/content";
 import { calculateReadingTime } from "@/lib/reading-time";
 import Card from "@/components/ui/Card";
@@ -46,17 +45,13 @@ export default function PostCard({ post, headingLevel = "h2" }: PostCardProps) {
 
       {resolvedChallenge && (
         <div className="mb-4">
-          <Link
-            href={`/challenges/${resolvedChallenge.slug}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-accent hover:underline text-xs font-semibold inline-flex items-center gap-1"
-          >
+          <span className="text-accent text-xs font-semibold inline-flex items-center gap-1">
             {resolvedChallenge.week !== undefined ? (
               <span>Part of week {resolvedChallenge.week} &rarr;</span>
             ) : (
               <span>Part of challenge: {resolvedChallenge.title} &rarr;</span>
             )}
-          </Link>
+          </span>
         </div>
       )}
 
