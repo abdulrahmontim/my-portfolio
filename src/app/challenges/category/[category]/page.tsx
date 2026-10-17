@@ -9,6 +9,8 @@ interface PageProps {
   params: Promise<{ category: string }>;
 }
 
+export const instant = false;
+
 export async function generateStaticParams() {
   const challenges = getAllChallenges();
   const activeCategories = Array.from(new Set(challenges.map((c) => c.frontmatter.category)));

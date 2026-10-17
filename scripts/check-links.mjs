@@ -22,10 +22,10 @@ function cleanup() {
       } else {
         process.kill(-serverProcess.pid, "SIGKILL");
       }
-    } catch (_) {
+    } catch {
       try {
         serverProcess.kill("SIGKILL");
-      } catch (_) {}
+      } catch {}
     }
     serverProcess = null;
   }
@@ -61,11 +61,11 @@ function freePortIfBusy() {
         if (pid && !isNaN(pid) && parseInt(pid, 10) > 0) {
           try {
             execSync(`taskkill /PID ${pid} /F`, { stdio: "ignore" });
-          } catch (_) {}
+          } catch {}
         }
       }
     }
-  } catch (_) {}
+  } catch {}
 }
 
 async function waitForServer(url, timeoutMs) {
@@ -76,7 +76,7 @@ async function waitForServer(url, timeoutMs) {
       if (res.status < 500) {
         return true;
       }
-    } catch (_) {
+    } catch {
       // Server not ready yet
     }
     await new Promise((r) => setTimeout(r, 500));
@@ -130,7 +130,7 @@ async function runLinkCheck() {
     env: { ...process.env, PORT: String(PORT) },
   });
 
-  serverProcess.stderr.on("data", (data) => {
+  serverProcess.stderr.on("data", () => {
     // Optionally inspect server errors if needed
   });
 
@@ -190,10 +190,10 @@ async function runLinkCheck() {
           if (!queue.includes(pathname)) {
             queue.push(pathname);
           }
-        } catch (_) {}
+        } catch {}
       }
     }
-  } catch (_) {}
+  } catch {}
 
   // Crawl queue
   while (queue.length > 0) {
@@ -258,7 +258,7 @@ async function runLinkCheck() {
         let isValidUrl = true;
         try {
           new URL(href);
-        } catch (_) {
+        } catch {
           isValidUrl = false;
         }
 
