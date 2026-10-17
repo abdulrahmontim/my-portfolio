@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ChallengeItem } from "@/lib/content";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -38,13 +37,9 @@ export default function ChallengeCard({ challenge, headingLevel = "h2" }: Challe
 
       {resolvedWriteup && (
         <div className="mb-4">
-          <Link
-            href={`/blog/${resolvedWriteup.slug}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-accent hover:underline text-xs font-semibold inline-flex items-center gap-1"
-          >
+          <span className="text-muted text-xs font-medium inline-flex items-center gap-1">
             <span>Read write-up: {resolvedWriteup.title} &rarr;</span>
-          </Link>
+          </span>
         </div>
       )}
 

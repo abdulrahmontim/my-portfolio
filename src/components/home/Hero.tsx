@@ -52,7 +52,7 @@ function MailIcon({ className = "w-4 h-4" }: { className?: string }) {
 
 export default function Hero() {
   return (
-    <section className="relative w-full pt-8 sm:pt-12 pb-12 sm:pb-16 dot-grid border-b border-border">
+    <section className="relative w-full pt-8 sm:pt-12 pb-12 sm:pb-16 border-b border-border">
       <div className="max-w-[1120px] mx-auto px-6 flex flex-col items-start gap-6">
         <Pill />
         <h1 className="text-[40px] sm:text-[56px] lg:text-[72px] font-extrabold text-text tracking-tight leading-[1.05] max-w-[860px]">
@@ -67,7 +67,7 @@ export default function Hero() {
           <Button href="/#projects" variant="primary">
             See my work &rarr;
           </Button>
-          <Button href="/challenges" variant="secondary">
+          <Button href="/challenges" variant="ghost">
             This week&apos;s challenge
           </Button>
           <Button href="/blog" variant="ghost">
@@ -81,7 +81,7 @@ export default function Hero() {
             href={siteConfig.links.linkedin}
             target="_blank"
             rel="noopener noreferrer"
-            variant="secondary"
+            variant="ghost"
             size="sm"
             className="flex items-center gap-2"
           >
@@ -92,7 +92,7 @@ export default function Hero() {
             href={siteConfig.links.github}
             target="_blank"
             rel="noopener noreferrer"
-            variant="secondary"
+            variant="ghost"
             size="sm"
             className="flex items-center gap-2"
           >
@@ -101,7 +101,7 @@ export default function Hero() {
           </Button>
           <Button
             href={EMAIL_LINK}
-            variant="secondary"
+            variant="ghost"
             size="sm"
             className="flex items-center gap-2"
           >

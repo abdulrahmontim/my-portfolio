@@ -3,7 +3,6 @@ import Link from "next/link";
 
 export interface CardProps {
   href?: string;
-  isLive?: boolean;
   className?: string;
   children: React.ReactNode;
   id?: string;
@@ -11,21 +10,18 @@ export interface CardProps {
 
 export default function Card({
   href,
-  isLive = false,
   className = "",
   children,
   id,
 }: CardProps) {
   const baseClasses =
-    "rounded-[16px] p-6 bg-surface border transition-all duration-200 block";
-
-  const borderClass = isLive ? "border-accent-border" : "border-border";
+    "rounded-[16px] p-6 bg-surface border border-border block";
 
   const hoverClasses = href
-    ? "hover:-translate-y-[3px] hover:border-primary hover:bg-surface2 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+    ? "cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
     : "";
 
-  const combinedClasses = `${baseClasses} ${borderClass} ${hoverClasses} ${className}`.trim();
+  const combinedClasses = `${baseClasses} ${hoverClasses} ${className}`.trim();
 
   if (href) {
     const isExternal =

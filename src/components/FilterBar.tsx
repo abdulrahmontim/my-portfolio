@@ -57,9 +57,9 @@ export default function FilterBar({
   };
 
   const chipActiveClasses =
-    "border border-primary text-primary bg-primary-glow font-mono text-xs font-semibold px-3 py-1 rounded-full transition-all cursor-pointer";
+    "border-b-2 border-primary text-text font-mono text-xs font-medium pb-0.5 cursor-pointer";
   const chipInactiveClasses =
-    "border border-border text-muted hover:text-text hover:border-muted/50 bg-surface2 font-mono text-xs font-medium px-3 py-1 rounded-full transition-all cursor-pointer";
+    "text-muted hover:text-text font-mono text-xs font-medium pb-0.5 transition-colors cursor-pointer";
 
   return (
     <div className="mb-8 space-y-4 p-5 rounded-[16px] border border-border bg-surface">
@@ -165,7 +165,7 @@ export default function FilterBar({
           <button
             type="button"
             onClick={clearFilters}
-            className="text-accent hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+            className="text-muted hover:text-text hover:underline font-medium flex items-center gap-1 cursor-pointer"
           >
             <span>&times; Clear filters</span>
           </button>

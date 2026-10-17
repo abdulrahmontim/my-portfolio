@@ -45,7 +45,7 @@ export default function PostCard({ post, headingLevel = "h2" }: PostCardProps) {
 
       {resolvedChallenge && (
         <div className="mb-4">
-          <span className="text-accent text-xs font-semibold inline-flex items-center gap-1">
+          <span className="text-muted text-xs font-medium inline-flex items-center gap-1">
             {resolvedChallenge.week !== undefined ? (
               <span>Part of week {resolvedChallenge.week} &rarr;</span>
             ) : (

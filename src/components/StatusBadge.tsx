@@ -11,27 +11,27 @@ const statusConfig: Record<
 > = {
   planned: {
     label: "Planned",
-    classes: "bg-surface2 text-muted border-border",
+    classes: "text-muted",
   },
   building: {
     label: "Building",
-    classes: "bg-accent-tint text-accent border-accent-border",
+    classes: "text-primary",
   },
   done: {
     label: "Done",
-    classes: "bg-primary-glow text-primary border-primary/30",
+    classes: "text-muted",
   },
 };
 
 export default function StatusBadge({ status, className = "" }: StatusBadgeProps) {
   const config = statusConfig[status] || {
     label: status,
-    classes: "bg-surface2 text-muted border-border",
+    classes: "text-muted",
   };
 
   return (
     <span
-      className={`inline-flex items-center rounded-[6px] border font-mono text-[12px] font-medium px-2.5 py-0.5 leading-tight ${config.classes} ${className}`}
+      className={`font-mono text-[12px] font-medium ${config.classes} ${className}`}
     >
       {config.label}
     </span>

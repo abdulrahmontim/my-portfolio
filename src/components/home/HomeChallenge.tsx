@@ -14,7 +14,7 @@ export default function HomeChallenge() {
     <section id="challenges" className="w-full max-w-[1120px] mx-auto px-6 py-10">
       <div className="flex flex-col gap-4">
         <span className="label">This week&apos;s challenge</span>
-        <Card href={`/challenges/${slug}`} isLive={true} className="p-8">
+        <Card href={`/challenges/${slug}`} className="p-8">
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="label">
@@ -32,7 +32,7 @@ export default function HomeChallenge() {
             </p>
 
             <div className="pt-2">
-              <span className="text-accent font-semibold text-[15px] inline-flex items-center gap-1.5 hover:underline">
+              <span className="text-text font-medium text-[15px] underline decoration-border hover:text-primary hover:decoration-primary inline-flex items-center gap-1.5">
                 Follow the build &rarr;
               </span>
             </div>

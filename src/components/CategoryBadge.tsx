@@ -20,7 +20,7 @@ export default function CategoryBadge({
   return (
     <Link
       href={targetHref}
-      className={`inline-flex items-center rounded-[6px] bg-secondary-tint text-secondary font-mono text-[12px] font-medium px-2.5 py-0.5 leading-tight hover:opacity-80 transition-opacity no-underline ${className}`}
+      className={`inline-flex items-center text-muted font-mono text-[12px] font-medium leading-tight hover:text-primary transition-colors no-underline ${className}`}
     >
       {label}
     </Link>

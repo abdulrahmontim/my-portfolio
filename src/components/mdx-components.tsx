@@ -10,39 +10,15 @@ export interface CalloutProps {
 }
 
 export function Callout({ type = "note", title, children }: CalloutProps) {
-  const styles = {
-    note: {
-      border: "border-secondary",
-      bg: "bg-secondary-tint",
-      titleColor: "text-secondary",
-      defaultTitle: "Note",
-    },
-    tip: {
-      border: "border-primary",
-      bg: "bg-primary-glow",
-      titleColor: "text-primary",
-      defaultTitle: "Tip",
-    },
-    warning: {
-      border: "border-accent",
-      bg: "bg-accent-tint",
-      titleColor: "text-accent",
-      defaultTitle: "Warning",
-    },
-  }[type] || {
-    border: "border-secondary",
-    bg: "bg-secondary-tint",
-    titleColor: "text-secondary",
-    defaultTitle: "Note",
-  };
+  const label = title || (type === "warning" ? "Warning" : type === "tip" ? "Tip" : "Note");
 
   return (
     <aside
-      className={`my-6 p-4 rounded-r-lg border-l-4 ${styles.border} ${styles.bg}`}
+      className="my-6 p-4 rounded-lg border border-border bg-surface"
       role="note"
     >
-      <div className={`text-xs font-mono font-bold uppercase tracking-wider mb-1 ${styles.titleColor}`}>
-        {title || styles.defaultTitle}
+      <div className="text-xs font-mono font-medium uppercase tracking-wider mb-2 text-muted">
+        {label}
       </div>
       <div className="text-sm sm:text-base leading-relaxed text-text [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
         {children}
@@ -113,11 +89,12 @@ function CustomTable({ children, ...props }: React.TableHTMLAttributes<HTMLTable
 }
 
 function CustomLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  const linkClasses = "text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors";
   if (!href) return <a {...props}>{children}</a>;
 
   if (href.startsWith("mailto:")) {
     return (
-      <a href={href} className="text-secondary hover:text-primary transition-colors underline underline-offset-4" {...props}>
+      <a href={href} className={linkClasses} {...props}>
         {children}
       </a>
     );
@@ -131,7 +108,7 @@ function CustomLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTM
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-secondary hover:text-primary transition-colors underline underline-offset-4"
+        className={linkClasses}
         {...props}
       >
         {children}
@@ -140,7 +117,7 @@ function CustomLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTM
   }
 
   return (
-    <Link href={href} className="text-secondary hover:text-primary transition-colors underline underline-offset-4" {...props}>
+    <Link href={href} className={linkClasses} {...props}>
       {children}
     </Link>
   );
@@ -183,7 +160,7 @@ export const mdxRemoteOptions: MDXRemoteProps["options"] = {
         rehypePrettyCode,
         {
           theme: {
-            dark: "github-dark",
+            dark: "github-dark-dimmed",
             light: "github-light",
           },
           keepBackground: false,

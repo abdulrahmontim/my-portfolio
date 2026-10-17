@@ -148,15 +148,15 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       {/* Cross-link box if part of challenge */}
       {resolvedChallenge && (
-        <Card isLive={true} className="mb-10 p-5">
-          <span className="font-mono text-xs uppercase tracking-wider text-accent font-semibold block mb-1">
+        <Card className="mb-10 p-5">
+          <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold block mb-1">
             Part of a Challenge
           </span>
           <div className="text-[15px] text-text">
             This article was written as the technical write-up for{" "}
             <Link
               href={`/challenges/${resolvedChallenge.slug}`}
-              className="font-bold text-accent hover:underline inline-flex items-center gap-1"
+              className="font-medium text-text underline decoration-border hover:text-primary hover:decoration-primary inline-flex items-center gap-1"
             >
               <span>{resolvedChallenge.title} &rarr;</span>
             </Link>

@@ -33,26 +33,20 @@ const themeCss = `
 :root {
   --bg: ${palette.dark.bg};
   --surface: ${palette.dark.surface};
-  --surface2: ${palette.dark.surface2};
   --border: ${palette.dark.border};
   --text: ${palette.dark.text};
   --muted: ${palette.dark.muted};
   --primary: ${palette.dark.primary};
   --on-primary: ${palette.dark.onPrimary};
-  --secondary: ${palette.dark.secondary};
-  --accent: ${palette.dark.accent};
 }
 [data-bs-theme="light"], html[data-bs-theme="light"] {
   --bg: ${palette.light.bg};
   --surface: ${palette.light.surface};
-  --surface2: ${palette.light.surface2};
   --border: ${palette.light.border};
   --text: ${palette.light.text};
   --muted: ${palette.light.muted};
   --primary: ${palette.light.primary};
   --on-primary: ${palette.light.onPrimary};
-  --secondary: ${palette.light.secondary};
-  --accent: ${palette.light.accent};
 }
 `;
 

@@ -19,7 +19,7 @@ export default function HomeWriting() {
         </div>
         <Link
           href="/blog"
-          className="text-secondary hover:text-primary font-semibold text-sm inline-flex items-center gap-1 transition-colors"
+          className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary font-medium text-sm inline-flex items-center gap-1 transition-colors"
         >
           View all posts &rarr;
         </Link>

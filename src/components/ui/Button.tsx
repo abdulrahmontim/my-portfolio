@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "ghost";
   size?: "default" | "sm";
   href?: string;
   target?: string;
@@ -28,9 +28,7 @@ export default function Button({
 
   const variantClasses = {
     primary:
-      "bg-primary text-on-primary hover:bg-primary-hover hover:-translate-y-px active:translate-y-0",
-    secondary:
-      "bg-transparent border border-secondary text-secondary hover:bg-secondary-tint",
+      "bg-surface border border-border text-text hover:border-muted",
     ghost:
       "bg-transparent text-text hover:text-primary",
   }[variant];

@@ -17,7 +17,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
           {indexLabel}
         </span>
         {project.subtitle && (
-          <span className="font-mono text-xs text-primary font-medium">
+          <span className="font-mono text-xs text-muted font-medium">
             {project.subtitle}
           </span>
         )}
@@ -32,7 +32,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
           href={project.repoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-secondary hover:text-primary font-semibold text-sm inline-flex items-center gap-1 transition-colors"
+          className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary font-medium text-sm inline-flex items-center gap-1 transition-colors"
         >
           GitHub Repo &rarr;
         </a>
@@ -45,7 +45,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
       {project.bullets && project.bullets.length > 0 && (
         <ul className="text-sm text-muted space-y-2 mb-6 list-disc list-inside leading-relaxed">
           {project.bullets.map((bullet, idx) => (
-            <li key={idx} className="marker:text-primary">
+            <li key={idx} className="marker:text-muted">
               <span className="text-text">{bullet}</span>
             </li>
           ))}

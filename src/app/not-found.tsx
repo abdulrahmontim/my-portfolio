@@ -14,10 +14,10 @@ export default function NotFound() {
         <Button href="/" variant="primary">
           Home
         </Button>
-        <Button href="/blog" variant="secondary">
+        <Button href="/blog" variant="ghost">
           Blog
         </Button>
-        <Button href="/challenges" variant="secondary">
+        <Button href="/challenges" variant="ghost">
           Challenges
         </Button>
       </div>

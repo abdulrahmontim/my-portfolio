@@ -111,9 +111,9 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
           {frontmatter.summary}
         </p>
 
-        {/* Definition of Done Box (Card with accent border, mono label in accent, goal in 20px) */}
-        <Card isLive={true} className="p-6 my-6">
-          <span className="font-mono text-xs uppercase tracking-wider text-accent font-semibold block mb-2">
+        {/* Definition of Done Box (Card with border, mono label in muted, goal in 20px) */}
+        <Card className="p-6 my-6">
+          <span className="font-mono text-xs uppercase tracking-wider text-muted font-semibold block mb-2">
             Definition of Done
           </span>
           <p className="text-[20px] text-text font-medium leading-relaxed">
@@ -138,7 +138,7 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
                 href={frontmatter.video}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-bold text-accent hover:underline"
+                className="text-sm font-medium text-text underline decoration-border hover:text-primary hover:decoration-primary"
               >
                 Watch Video &rarr;
               </a>
@@ -164,7 +164,7 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
                 <span className="label">Technical Write-up</span>
                 <Link
                   href={`/blog/${resolvedWriteup.slug}`}
-                  className="text-accent font-semibold text-[15px] hover:underline"
+                  className="text-text font-medium text-[15px] underline decoration-border hover:text-primary hover:decoration-primary"
                 >
                   {resolvedWriteup.title} &rarr;
                 </Link>
