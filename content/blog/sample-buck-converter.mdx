@@ -1,0 +1,44 @@
+---
+title: "[Sample] Building a Discrete DC-DC Buck Converter"
+summary: "Designing and assembling a 12V to 5V synchronous step-down converter from fundamental analog components."
+publishedAt: "2026-10-14"
+category: "electronics"
+tags: ["power", "analog"]
+type: "challenge"
+draft: false
+status: "building"
+week: 1
+difficulty: "medium"
+goal: "Design, calculate, and assemble a 12V to 5V step-down DC-DC buck converter capable of delivering 2A continuous output."
+---
+
+## What I'm learning
+
+[Placeholder] This section explores the fundamental dynamics of LC filter design, duty cycle regulation, and switching losses across varying load profiles.
+
+[Placeholder] Understanding gate drive circuits and how parasitic inductance induces ringing on high-frequency switching nodes.
+
+## Build plan
+
+[Placeholder] Phase 1 consists of SPICE simulations to verify inductor ripple currents and capacitor ESR requirements.
+
+[Placeholder] Phase 2 transitions from breadboard prototyping to a dedicated copper perfboard layout with minimized loop area.
+
+## Parts list
+
+* [Placeholder] Power MOSFETs (N-channel logic level)
+* [Placeholder] 47µH shielded power inductor rated for 3A saturation
+* [Placeholder] Low-ESR electrolytic and ceramic decoupling capacitors
+* [Placeholder] Fast recovery Schottky freewheeling diode
+
+## Results
+
+[Placeholder] Preliminary breadboard testing shows clean 5V output under a 500mA dummy load with approximately 45mV peak-to-peak ripple.
+
+[Placeholder] Thermal testing and high-current efficiency measurements are ongoing as full load testing progresses.
+
+## What I'd change
+
+[Placeholder] Future iterations will incorporate an integrated synchronous rectifier IC rather than discrete drive stages to maximize power conversion efficiency.
+
+[Placeholder] A double-sided custom PCB with continuous ground plane will be designed to curb EMI emissions.
