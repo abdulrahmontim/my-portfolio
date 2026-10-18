@@ -63,6 +63,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+async function MDXBody({ content }: { content: string }) {
+  "use cache";
+  return (
+    <div className="prose">
+      <MDXRemote
+        source={content}
+        components={mdxComponents}
+        options={mdxRemoteOptions}
+      />
+    </div>
+  );
+}
+
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
   const post = getPost(slug);
@@ -192,13 +205,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       )}
 
       {/* MDX prose */}
-      <div className="prose">
-        <MDXRemote
-          source={content}
-          components={mdxComponents}
-          options={mdxRemoteOptions}
-        />
-      </div>
+      <MDXBody content={content} />
 
       {/* Simple previous/next row */}
       {(prev || next) && (

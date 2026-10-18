@@ -1,0 +1,65 @@
+---
+title: "[Sample] Designing Resilient Exponential Backoff"
+summary: "An exploration of retry policies, exponential backoff algorithms, and jitter strategies for distributed backend services."
+publishedAt: "2026-10-18"
+category: "software"
+tags: ["backend", "python"]
+type: "post"
+draft: false
+---
+
+Transient failures are inevitable in distributed systems. When network partitions or downstream service degradation occur, naive retries can overwhelm an already struggling system.
+
+## The Dynamics of Exponential Backoff
+
+Exponential backoff progressively increases the wait duration between consecutive retry attempts. Rather than retrying immediately, the client yields for `base * (2 ** attempt)` milliseconds, allowing downstream dependencies time to recover.
+
+### Backoff Strategies Compared
+
+Here is how different retry intervals scale over successive retry iterations:
+
+| Strategy | Attempt 1 | Attempt 2 | Attempt 3 |
+| :--- | :--- | :--- | :--- |
+| Fixed Interval | 100ms | 100ms | 100ms |
+| Exponential | 100ms | 200ms | 400ms |
+| Full Jitter | 0–100ms | 0–200ms | 0–400ms |
+
+Key components to consider when configuring retry budgets include:
+
+* Setting a strict maximum retry limit to avoid infinite loops
+* Adding randomized jitter to prevent the thundering herd problem
+* Respecting standard `Retry-After` HTTP headers returned by upstream servers
+
+<Callout type="note" title="Retry Budget">
+Always define a bounded upper timeout so client threads do not exhaust local connection pools while waiting for upstream recovery.
+</Callout>
+
+```python title="retry.py"
+import random
+import time
+
+def backoff_delay(attempt: int, base: float = 0.1, max_delay: float = 2.0) -> float:
+    """Calculate exponential delay with full jitter."""
+    calculated = min(max_delay, base * (2 ** attempt))
+    return random.uniform(0, calculated)
+
+for attempt in range(4):
+    delay = backoff_delay(attempt)
+    print(f"Attempt {attempt + 1}: sleeping {delay:.3f}s")
+    time.sleep(delay)
+```
+
+```typescript
+interface RetryOptions {
+  maxRetries: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+}
+
+export function calculateBackoff(attempt: number, opts: RetryOptions): number {
+  const exponential = Math.min(opts.maxDelayMs, opts.baseDelayMs * Math.pow(2, attempt));
+  return Math.random() * exponential;
+}
+```
+
+For more architectural notes and experiments, visit our [blog index](/blog) or check out the [AWS Architecture Blog](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) on jitter algorithms.
