@@ -1,26 +1,33 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { PostItem } from "@/lib/content";
 import { CATEGORIES } from "@/lib/site";
-import PostCard from "./PostCard";
-import FilterBar, { FilterOption, TagOption } from "./FilterBar";
 
 interface BlogListProps {
   posts: PostItem[];
+  initialCategory?: string;
 }
 
-function BlogListInner({ posts }: BlogListProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function BlogListInner({ posts, initialCategory }: BlogListProps) {
   const searchParams = useSearchParams();
+  const activeType = searchParams.get("type");
+  const queryCategory = searchParams.get("category");
+  const activeCategory = initialCategory || queryCategory || "";
 
-  const activeCategory = searchParams.get("category") || "";
-  const activeTag = searchParams.get("tag") || "";
-
-  // Derive categories with counts from posts
-  const categories: FilterOption[] = useMemo(() => {
+  // Derive categories that have posts
+  const categoriesWithPosts = useMemo(() => {
     return Object.entries(CATEGORIES)
       .map(([key, label]) => {
         const count = posts.filter((p) => p.frontmatter.category === key).length;
@@ -29,93 +36,148 @@ function BlogListInner({ posts }: BlogListProps) {
       .filter((cat) => cat.count > 0);
   }, [posts]);
 
-  // Derive tags with counts from posts
-  const tags: TagOption[] = useMemo(() => {
-    const map = new Map<string, number>();
-    posts.forEach((p) => {
-      p.frontmatter.tags?.forEach((t) => {
-        map.set(t, (map.get(t) || 0) + 1);
-      });
-    });
-    return Array.from(map.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [posts]);
-
-  // Filtered posts based on active query params
+  // Filter posts based on active type or category
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
-      if (activeCategory && post.frontmatter.category !== activeCategory) {
-        return false;
+      if (activeType === "challenge") {
+        if (post.frontmatter.type !== "challenge") return false;
       }
-      if (activeTag && !post.frontmatter.tags?.includes(activeTag)) {
-        return false;
+      if (activeCategory) {
+        if (post.frontmatter.category !== activeCategory) return false;
       }
       return true;
     });
-  }, [posts, activeCategory, activeTag]);
+  }, [posts, activeType, activeCategory]);
 
-  if (posts.length === 0) {
-    return (
-      <div className="text-center py-16 border border-dashed border-border rounded-[16px] bg-surface">
-        <p className="text-base text-muted">No articles published yet. Check back soon!</p>
-      </div>
-    );
-  }
+  const isAllActive = !activeType && !activeCategory;
 
   return (
     <div>
-      <FilterBar
-        categories={categories}
-        tags={tags}
-        totalCount={posts.length}
-        filteredCount={filteredPosts.length}
-      />
-
-      {filteredPosts.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-border rounded-[16px] bg-surface flex flex-col items-center gap-4">
-          <p className="text-base text-muted">
-            No posts found matching the selected filters.
-          </p>
-          <button
-            type="button"
-            onClick={() => router.replace(pathname, { scroll: false })}
-            className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors text-sm"
+      {/* Filter row: plain text options */}
+      <div className="flex flex-wrap items-center gap-6 text-sm mb-10 pb-3 border-b border-border">
+        <Link
+          href="/blog"
+          className={
+            isAllActive
+              ? "text-text underline decoration-2 decoration-primary underline-offset-[6px] font-medium"
+              : "text-muted hover:text-text transition-colors"
+          }
+        >
+          All
+        </Link>
+        <Link
+          href="/blog?type=challenge"
+          className={
+            activeType === "challenge"
+              ? "text-text underline decoration-2 decoration-primary underline-offset-[6px] font-medium"
+              : "text-muted hover:text-text transition-colors"
+          }
+        >
+          Challenges
+        </Link>
+        {categoriesWithPosts.map((cat) => (
+          <Link
+            key={cat.key}
+            href={`/blog/category/${cat.key}`}
+            className={
+              activeCategory === cat.key
+                ? "text-text underline decoration-2 decoration-primary underline-offset-[6px] font-medium"
+                : "text-muted hover:text-text transition-colors"
+            }
           >
-            Clear filters
-          </button>
-        </div>
+            {cat.label}
+          </Link>
+        ))}
+      </div>
+
+      {/* Posts List */}
+      {filteredPosts.length === 0 ? (
+        <p className="text-muted text-base py-8">
+          No posts found.
+        </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredPosts.map((post) => (
-            <PostCard key={post.slug} post={post} />
-          ))}
+        <div className="divide-y divide-border">
+          {filteredPosts.map((post) => {
+            const formattedDate = formatDate(post.frontmatter.publishedAt);
+            const isBuilding = post.frontmatter.status === "building";
+
+            return (
+              <div
+                key={post.slug}
+                className="py-6 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-6"
+              >
+                {/* Fixed-width date column */}
+                <time
+                  dateTime={post.frontmatter.publishedAt.toISOString()}
+                  className="w-28 shrink-0 font-mono text-[12px] text-muted"
+                >
+                  {formattedDate}
+                </time>
+
+                {/* Post details */}
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="group inline-block"
+                    >
+                      <h3 className="text-[17px] leading-[1.4] font-semibold text-text group-hover:text-primary transition-colors">
+                        {post.frontmatter.title}
+                      </h3>
+                    </Link>
+
+                    {post.frontmatter.type === "challenge" && (
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[12px]">
+                        <span className="text-muted">Challenge</span>
+                        {post.frontmatter.week !== undefined && (
+                          <>
+                            <span className="text-muted">·</span>
+                            <span className="text-muted">
+                              Week {post.frontmatter.week}
+                            </span>
+                          </>
+                        )}
+                        {post.frontmatter.status && (
+                          <>
+                            <span className="text-muted">·</span>
+                            <span
+                              className={
+                                isBuilding
+                                  ? "text-primary font-medium"
+                                  : "text-muted"
+                              }
+                            >
+                              {post.frontmatter.status}
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-muted text-base leading-[1.65] truncate">
+                    {post.frontmatter.summary}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-export default function BlogList({ posts }: BlogListProps) {
-  if (posts.length === 0) {
-    return (
-      <div className="text-center py-16 border border-dashed border-border rounded-[16px] bg-surface">
-        <p className="text-base text-muted">No articles published yet. Check back soon!</p>
-      </div>
-    );
-  }
-
+export default function BlogList(props: BlogListProps) {
   return (
     <Suspense
       fallback={
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60">
-          {posts.map((post) => (
-            <PostCard key={post.slug} post={post} />
-          ))}
+        <div className="py-8 text-muted text-sm">
+          Loading posts...
         </div>
       }
     >
-      <BlogListInner posts={posts} />
+      <BlogListInner {...props} />
     </Suspense>
   );
 }

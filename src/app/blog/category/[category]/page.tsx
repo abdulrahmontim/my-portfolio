@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPosts } from "@/lib/content";
 import { CATEGORIES, CategoryKey, SITE_URL } from "@/lib/site";
-import PostCard from "@/components/PostCard";
+import BlogList from "@/components/BlogList";
 
 interface PageProps {
   params: Promise<{ category: string }>;
@@ -60,39 +59,22 @@ export default async function BlogCategoryPage({ params }: PageProps) {
     notFound();
   }
   const categoryKey = category as CategoryKey;
-  const label = CATEGORIES[categoryKey];
   const allPosts = getAllPosts();
-  const posts = allPosts.filter((p) => p.frontmatter.category === categoryKey);
+  const categoryPosts = allPosts.filter((p) => p.frontmatter.category === categoryKey);
 
-  if (posts.length === 0) {
+  if (categoryPosts.length === 0) {
     notFound();
   }
 
   return (
     <div className="w-full max-w-[720px] mx-auto px-6 py-12">
-      <div className="mb-6">
-        <Link
-          href="/blog"
-          className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary font-mono text-xs transition-colors inline-flex items-center gap-1.5"
-        >
-          <span>&larr; All categories</span>
-        </Link>
-      </div>
-
-      <header className="mb-8 pb-4 border-b border-border">
-        <h1 className="text-[32px] font-semibold leading-[1.2] text-text mb-2">
-          {label}
+      <header className="mb-8">
+        <h1 className="text-[32px] font-semibold leading-[1.2] text-text">
+          Blog
         </h1>
-        <p className="text-xs font-mono text-muted">
-          {posts.length} {posts.length === 1 ? "article" : "articles"} in this category
-        </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {posts.map((post) => (
-          <PostCard key={post.slug} post={post} />
-        ))}
-      </div>
+      <BlogList posts={allPosts} initialCategory={categoryKey} />
     </div>
   );
 }
