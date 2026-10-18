@@ -6,7 +6,6 @@ import { PostItem } from "@/lib/content";
 import { CATEGORIES } from "@/lib/site";
 import PostCard from "./PostCard";
 import FilterBar, { FilterOption, TagOption } from "./FilterBar";
-import Button from "@/components/ui/Button";
 
 interface BlogListProps {
   posts: PostItem[];
@@ -78,13 +77,13 @@ function BlogListInner({ posts }: BlogListProps) {
           <p className="text-base text-muted">
             No posts found matching the selected filters.
           </p>
-          <Button
-            size="sm"
-            variant="primary"
+          <button
+            type="button"
             onClick={() => router.replace(pathname, { scroll: false })}
+            className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors text-sm"
           >
             Clear filters
-          </Button>
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

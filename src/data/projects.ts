@@ -13,7 +13,7 @@ export const projects: Project[] = [
     subtitle: "HNG Tech Internship Team Project",
     repoUrl: "https://github.com/hngprojects/meetmind-api",
     description:
-      "Collaborated on a real codebase under strict deadlines to build an AI-driven interview platform. My core contributions included:",
+      "Collaborated on a real codebase under strict deadlines to build an AI-driven interview platform.",
     bullets: [
       "Wiring up the AI service with multi-LLM fallback logic to prevent system crashes during model outages.",
       "Developing the notification system, chat query, and summary generation logic.",
