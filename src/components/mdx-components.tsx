@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import rehypePrettyCode from "rehype-pretty-code";
 import type { MDXRemoteProps } from "next-mdx-remote/rsc";
+import remarkGfm from "remark-gfm";
 
 export interface CalloutProps {
   type?: "note" | "tip" | "warning";
@@ -80,11 +81,51 @@ export function YouTube({ id }: YouTubeProps) {
 
 function CustomTable({ children, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="overflow-x-auto my-6 border border-border rounded-lg">
-      <table className="min-w-full divide-y divide-border" {...props}>
+    <div className="overflow-x-auto my-6">
+      <table className="w-full border-collapse text-left" {...props}>
         {children}
       </table>
     </div>
+  );
+}
+
+function CustomThead({ children, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+  return (
+    <thead className="border-b border-border" {...props}>
+      {children}
+    </thead>
+  );
+}
+
+function CustomTbody({ children, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+  return (
+    <tbody className="divide-y divide-border" {...props}>
+      {children}
+    </tbody>
+  );
+}
+
+function CustomTr({ children, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
+  return (
+    <tr {...props}>
+      {children}
+    </tr>
+  );
+}
+
+function CustomTh({ children, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <th className="font-semibold text-muted py-2 px-3 text-left border-b border-border" {...props}>
+      {children}
+    </th>
+  );
+}
+
+function CustomTd({ children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <td className="py-2 px-3 text-text text-left" {...props}>
+      {children}
+    </td>
   );
 }
 
@@ -149,12 +190,18 @@ export const mdxComponents = {
   Figure,
   YouTube,
   table: CustomTable,
+  thead: CustomThead,
+  tbody: CustomTbody,
+  tr: CustomTr,
+  th: CustomTh,
+  td: CustomTd,
   a: CustomLink,
   img: CustomImg,
 };
 
 export const mdxRemoteOptions: MDXRemoteProps["options"] = {
   mdxOptions: {
+    remarkPlugins: [remarkGfm],
     rehypePlugins: [
       [
         rehypePrettyCode,
