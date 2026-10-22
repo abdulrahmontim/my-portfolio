@@ -19,6 +19,14 @@ const INITIAL_FORM: FormState = {
   _hp: "",
 };
 
+function formatCooldownNotice(seconds: number): string {
+  if (seconds >= 60) {
+    const minutes = Math.ceil(seconds / 60);
+    return ` Please wait ${minutes} minute${minutes === 1 ? "" : "s"} before trying again.`;
+  }
+  return ` Please wait ${seconds} second${seconds === 1 ? "" : "s"} before trying again.`;
+}
+
 export default function ContactForm() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -37,10 +45,71 @@ export default function ContactForm() {
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const successPanelRef = useRef<HTMLDivElement>(null);
 
+  // Rate limiting cooldown timer state & synchronous submit guard
+  const [cooldownSeconds, setCooldownSeconds] = useState<number | null>(null);
+  const cooldownEndRef = useRef<number | null>(null);
+  const isSubmittingRef = useRef<boolean>(false);
+
   // Invisible Turnstile execution and widget references
   const widgetIdRef = useRef<string | null>(null);
   const turnstileResolveRef = useRef<((token: string) => void) | null>(null);
   const turnstileRejectRef = useRef<((reason: Error) => void) | null>(null);
+
+  // Live countdown timer and sessionStorage synchronization
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const storedUntil = window.sessionStorage?.getItem("portfolio_contact_cooldown_until");
+      if (storedUntil) {
+        const remainingMs = parseInt(storedUntil, 10) - Date.now();
+        if (remainingMs > 0) {
+          const remainingSec = Math.ceil(remainingMs / 1000);
+          cooldownEndRef.current = parseInt(storedUntil, 10);
+          setTimeout(() => {
+            setCooldownSeconds(remainingSec);
+            setServerError(
+              `Too many requests. Please wait a while before sending another message.${formatCooldownNotice(remainingSec)}`
+            );
+          }, 0);
+        } else {
+          window.sessionStorage.removeItem("portfolio_contact_cooldown_until");
+        }
+      }
+    } catch {
+      // ignore sessionStorage access errors
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cooldownSeconds === null || cooldownSeconds <= 0) return;
+
+    const interval = setInterval(() => {
+      if (cooldownEndRef.current) {
+        const remainingMs = cooldownEndRef.current - Date.now();
+        const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+        if (remainingSec <= 0) {
+          setCooldownSeconds(null);
+          cooldownEndRef.current = null;
+          try {
+            window.sessionStorage?.removeItem("portfolio_contact_cooldown_until");
+          } catch {
+            // ignore sessionStorage error
+          }
+          setServerError(null);
+        } else {
+          setCooldownSeconds(remainingSec);
+          setServerError(
+            `Too many requests. Please wait a while before sending another message.${formatCooldownNotice(remainingSec)}`
+          );
+        }
+      } else {
+        setCooldownSeconds(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [cooldownSeconds]);
 
   useEffect(() => {
     if (status === "success") {
@@ -195,7 +264,9 @@ export default function ContactForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (status === "submitting") return;
+    if (status === "submitting" || isSubmittingRef.current || (cooldownSeconds !== null && cooldownSeconds > 0)) {
+      return;
+    }
 
     // Client-side validation: reject empty or whitespace-only values
     const errors: Record<string, string> = {};
@@ -225,6 +296,7 @@ export default function ContactForm() {
       return;
     }
 
+    isSubmittingRef.current = true;
     setStatus("submitting");
     setFieldErrors({});
     setServerError(null);
@@ -233,6 +305,7 @@ export default function ContactForm() {
     try {
       token = await obtainTurnstileToken();
     } catch (err) {
+      isSubmittingRef.current = false;
       setStatus("error");
       resetTurnstile();
       setServerError(
@@ -258,6 +331,7 @@ export default function ContactForm() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.success) {
+        isSubmittingRef.current = false;
         setStatus("error");
         resetTurnstile();
         if (data?.fieldErrors) {
@@ -268,24 +342,44 @@ export default function ContactForm() {
         }
 
         // Check if rate limited with Retry-After header
-        const retryAfter = response.headers.get("Retry-After");
-        const rateLimitNotice = retryAfter
-          ? ` Please wait ${Math.ceil(parseInt(retryAfter, 10) / 60)} minutes before trying again.`
-          : "";
+        if (response.status === 429) {
+          const retryAfter = response.headers.get("Retry-After");
+          const retrySeconds = retryAfter ? parseInt(retryAfter, 10) : 600;
+          const validCooldownSec = !isNaN(retrySeconds) && retrySeconds > 0 ? retrySeconds : 600;
+
+          cooldownEndRef.current = Date.now() + validCooldownSec * 1000;
+          setCooldownSeconds(validCooldownSec);
+          try {
+            window.sessionStorage?.setItem(
+              "portfolio_contact_cooldown_until",
+              String(cooldownEndRef.current)
+            );
+          } catch {
+            // ignore sessionStorage error
+          }
+
+          setServerError(
+            (data?.error ||
+              "Too many requests. Please wait a while before sending another message.") +
+              formatCooldownNotice(validCooldownSec)
+          );
+          return;
+        }
 
         setServerError(
-          (data?.error ||
-            "Unable to deliver your message at this time. Please try again or reach out by email.") +
-            rateLimitNotice
+          data?.error ||
+            "Unable to deliver your message at this time. Please try again or reach out by email."
         );
         return;
       }
 
       // Success: clear form fields
+      isSubmittingRef.current = false;
       setStatus("success");
       setForm(INITIAL_FORM);
       resetTurnstile();
     } catch {
+      isSubmittingRef.current = false;
       setStatus("error");
       resetTurnstile();
       setServerError(
@@ -296,7 +390,9 @@ export default function ContactForm() {
 
   const handleReset = () => {
     setStatus("idle");
-    setServerError(null);
+    if (!cooldownSeconds || cooldownSeconds <= 0) {
+      setServerError(null);
+    }
     setFieldErrors({});
     setForm(INITIAL_FORM);
     resetTurnstile();
@@ -572,10 +668,14 @@ export default function ContactForm() {
       <div className="pt-2 space-y-4">
         <button
           type="submit"
-          disabled={status === "submitting"}
+          disabled={status === "submitting" || (cooldownSeconds !== null && cooldownSeconds > 0)}
           className="inline-flex items-center justify-center px-5 py-2.5 bg-primary text-on-primary font-medium rounded hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-base"
         >
-          {status === "submitting" ? (
+          {cooldownSeconds !== null && cooldownSeconds > 0 ? (
+            <span>
+              Please wait ({cooldownSeconds >= 60 ? `${Math.ceil(cooldownSeconds / 60)}m` : `${cooldownSeconds}s`})
+            </span>
+          ) : status === "submitting" ? (
             <span className="inline-flex items-center gap-2">
               <svg
                 className="animate-spin h-4 w-4"
