@@ -24,7 +24,6 @@ export default function ContactForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const nameId = useId();
   const emailId = useId();
@@ -36,6 +35,13 @@ export default function ContactForm() {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLTextAreaElement>(null);
+  const successPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (status === "success") {
+      successPanelRef.current?.focus();
+    }
+  }, [status]);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
@@ -191,10 +197,6 @@ export default function ContactForm() {
 
       // Success: clear form fields
       setStatus("success");
-      setSuccessMessage(
-        data.message ||
-          "Thank you! Your message has been sent successfully. I will get back to you soon."
-      );
       setForm(INITIAL_FORM);
       setTurnstileToken("");
     } catch {
@@ -207,29 +209,65 @@ export default function ContactForm() {
 
   const handleReset = () => {
     setStatus("idle");
-    setSuccessMessage(null);
     setServerError(null);
     setFieldErrors({});
     setForm(INITIAL_FORM);
     setTurnstileToken("");
+    setTimeout(() => {
+      nameRef.current?.focus();
+    }, 0);
   };
 
   if (status === "success") {
     return (
-      <div role="status" className="space-y-4">
-        <p className="text-base text-text leading-[1.65]">
-          {successMessage}
-        </p>
-        <div>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors text-sm cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-          >
-            &larr; Send another message
-          </button>
+      <div className="space-y-6">
+        <div
+          role="status"
+          aria-live="polite"
+          tabIndex={-1}
+          ref={successPanelRef}
+          className="success-panel-enter border border-border bg-surface rounded-lg p-6 sm:p-7 space-y-5 focus:outline-none focus:ring-1 focus:ring-primary/40"
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className="w-10 h-10 rounded-full bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0"
+              aria-hidden="true"
+            >
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="space-y-1.5 pt-0.5">
+              <h3 className="text-[18px] sm:text-[20px] font-semibold text-text leading-snug">
+                Message sent!
+              </h3>
+              <p className="text-base text-muted leading-[1.65]">
+                Thanks for reaching out. I&apos;ll get back to you as soon as I can.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 border border-border bg-bg text-text rounded text-sm font-medium hover:border-primary hover:text-primary transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            >
+              <span aria-hidden="true">&larr;</span> Send another message
+            </button>
+          </div>
         </div>
-        <p className="text-sm text-muted pt-2">
+
+        <p className="text-sm text-muted">
           Prefer email?{" "}
           <a
             href="mailto:abdulrahmonsulaimon60@gmail.com"

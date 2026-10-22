@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import {
@@ -712,5 +714,72 @@ describe("processContactSubmission (End-to-End Abuse Protection & Mocked Resend)
     assert.strictEqual(result.status, 500);
     assert.strictEqual(result.data.success, false);
     assert.strictEqual(result.data.error?.includes("temporarily unavailable"), true);
+  });
+});
+
+describe("Contact Form Success State Contract", () => {
+  it("delivers 200 with success confirmation payload for valid submissions", async () => {
+    let emailSent = false;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async () => {
+          emailSent = true;
+          return { data: { id: "resend_mock_success_id" }, error: null };
+        },
+      },
+    };
+
+    const result = await processContactSubmission(
+      {
+        name: "Katherine Johnson",
+        email: "katherine@example.com",
+        subject: "Trajectory Calculation",
+        message: "Successful submission triggering the inline success panel state.",
+      },
+      {
+        apiKey: "re_mock_key_123",
+        toEmail: "owner@example.com",
+        resendClient: mockResend,
+      }
+    );
+
+    assert.strictEqual(result.status, 200);
+    assert.strictEqual(result.data.success, true);
+    assert.strictEqual(emailSent, true);
+  });
+
+  it("verifies ContactForm source contains required inline success panel elements and copy", () => {
+    const componentCode = fs.readFileSync(path.resolve("src/components/ContactForm.tsx"), "utf8");
+
+    // Clear checkmark icon
+    assert.match(componentCode, /viewBox="0 0 20 20"/);
+    assert.match(componentCode, /d="M16.707 5.293/);
+
+    // Concise heading
+    assert.match(componentCode, /Message sent!/);
+
+    // Exact supporting text
+    assert.match(
+      componentCode,
+      /Thanks for reaching out. I&apos;ll get back to you as soon as I can./
+    );
+
+    // Secondary reset action
+    assert.match(componentCode, /Send another message/);
+    assert.match(componentCode, /handleReset/);
+
+    // Entrance animation class
+    assert.match(componentCode, /success-panel-enter/);
+
+    // Direct email link preserved
+    assert.match(componentCode, /mailto:abdulrahmonsulaimon60@gmail.com/);
+  });
+
+  it("verifies globals.css defines entrance animation with prefers-reduced-motion support", () => {
+    const cssCode = fs.readFileSync(path.resolve("src/app/globals.css"), "utf8");
+
+    assert.match(cssCode, /@keyframes successFadeIn/);
+    assert.match(cssCode, /.success-panel-enter/);
+    assert.match(cssCode, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   });
 });
