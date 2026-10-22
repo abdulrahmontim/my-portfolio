@@ -82,7 +82,7 @@ export function YouTube({ id }: YouTubeProps) {
 function CustomTable({ children, className = "", ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
     <div className="overflow-x-auto my-6 border border-border rounded-lg bg-surface/20">
-      <table className={`min-w-full divide-y divide-border text-sm text-left ${className}`} {...props}>
+      <table className={`min-w-full divide-y divide-border text-sm text-left m-0! my-0! ${className}`} {...props}>
         {children}
       </table>
     </div>

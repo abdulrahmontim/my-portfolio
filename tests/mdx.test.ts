@@ -89,6 +89,27 @@ describe("MDX Rendering & Table Support", () => {
     );
   });
 
+  it("resets table margin to 0 so table fits flush within wrapper card without extra top/bottom space", () => {
+    const globalsCss = fs.readFileSync(
+      path.resolve("src/app/globals.css"),
+      "utf8"
+    );
+
+    // Verify globals.css overrides default prose table margin (which is 2em by default)
+    assert.match(
+      globalsCss,
+      /\.prose\s+table\s*\{[\s\S]*?margin:\s*0\s*!important/,
+      "globals.css must reset .prose table margin to 0"
+    );
+
+    // Verify CustomTable applies margin-reset utility classes
+    assert.match(
+      mdxComponentsFile,
+      /m-0!|my-0!/,
+      "CustomTable must apply zero-margin utility classes"
+    );
+  });
+
   it("renders markdown tables as semantic HTML table elements with remark-gfm", async () => {
     const markdownTable = `
 | Strategy | Attempt 1 | Attempt 2 | Attempt 3 |
