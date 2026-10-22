@@ -31,6 +31,7 @@ const themeCss = `
   --muted: ${palette.dark.muted};
   --primary: ${palette.dark.primary};
   --on-primary: ${palette.dark.onPrimary};
+  --error: #f87171;
 }
 [data-bs-theme="light"], html[data-bs-theme="light"] {
   --bg: ${palette.light.bg};
@@ -40,6 +41,7 @@ const themeCss = `
   --muted: ${palette.light.muted};
   --primary: ${palette.light.primary};
   --on-primary: ${palette.light.onPrimary};
+  --error: #b91c1c;
 }
 `;
 
