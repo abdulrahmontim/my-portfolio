@@ -20,7 +20,6 @@ const INITIAL_FORM: FormState = {
 
 export default function ContactForm() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -37,6 +36,11 @@ export default function ContactForm() {
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const successPanelRef = useRef<HTMLDivElement>(null);
 
+  // Invisible Turnstile execution and widget references
+  const widgetIdRef = useRef<string | null>(null);
+  const turnstileResolveRef = useRef<((token: string) => void) | null>(null);
+  const turnstileRejectRef = useRef<((reason: Error) => void) | null>(null);
+
   useEffect(() => {
     if (status === "success") {
       successPanelRef.current?.focus();
@@ -45,30 +49,43 @@ export default function ContactForm() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-  // Optional Cloudflare Turnstile integration
+  // Cloudflare Invisible Turnstile integration
   useEffect(() => {
     if (!turnstileSiteKey || typeof window === "undefined") return;
 
-    let widgetId: string | undefined;
+    let isMounted = true;
 
     const renderWidget = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cf = (window as any).turnstile;
       const el = document.getElementById(turnstileContainerId);
-      if (cf && el) {
+      if (cf && el && !widgetIdRef.current) {
         try {
-          widgetId = cf.render(el, {
+          widgetIdRef.current = cf.render(el, {
             sitekey: turnstileSiteKey,
+            size: "invisible",
+            execution: "execute",
             callback: (token: string) => {
-              setTurnstileToken(token);
-            },
-            "expired-callback": () => {
-              setTurnstileToken("");
+              if (turnstileResolveRef.current) {
+                turnstileResolveRef.current(token);
+                turnstileResolveRef.current = null;
+              }
             },
             "error-callback": () => {
-              setTurnstileToken("");
+              if (turnstileRejectRef.current) {
+                turnstileRejectRef.current(new Error("Turnstile challenge failed"));
+                turnstileRejectRef.current = null;
+              }
             },
-            theme: "auto",
+            "expired-callback": () => {
+              if (widgetIdRef.current && cf) {
+                try {
+                  cf.reset(widgetIdRef.current);
+                } catch {
+                  // ignore reset error
+                }
+              }
+            },
           });
         } catch {
           // ignore duplicate render attempt
@@ -87,23 +104,76 @@ export default function ContactForm() {
         script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
         script.async = true;
         script.defer = true;
-        script.onload = renderWidget;
+        script.onload = () => {
+          if (isMounted) renderWidget();
+        };
         document.head.appendChild(script);
       }
     }
 
     return () => {
+      isMounted = false;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cf = (window as any).turnstile;
-      if (widgetId && cf) {
+      if (widgetIdRef.current && cf) {
         try {
-          cf.remove(widgetId);
+          cf.remove(widgetIdRef.current);
         } catch {
           // ignore cleanup errors
         }
+        widgetIdRef.current = null;
       }
     };
   }, [turnstileSiteKey, turnstileContainerId]);
+
+  const resetTurnstile = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cf = typeof window !== "undefined" ? (window as any).turnstile : undefined;
+    if (cf && widgetIdRef.current) {
+      try {
+        cf.reset(widgetIdRef.current);
+      } catch {
+        // ignore reset error
+      }
+    }
+  };
+
+  const obtainTurnstileToken = async (): Promise<string | undefined> => {
+    if (!turnstileSiteKey) return undefined;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cf = typeof window !== "undefined" ? (window as any).turnstile : undefined;
+    const widgetId = widgetIdRef.current;
+
+    if (!cf || !widgetId) {
+      // If Turnstile is uninitialized or blocked, pass undefined so server validates configuration
+      return undefined;
+    }
+
+    return new Promise<string>((resolve, reject) => {
+      turnstileResolveRef.current = resolve;
+      turnstileRejectRef.current = reject;
+
+      try {
+        cf.reset(widgetId);
+        cf.execute(widgetId);
+      } catch (err) {
+        turnstileResolveRef.current = null;
+        turnstileRejectRef.current = null;
+        reject(err instanceof Error ? err : new Error(String(err)));
+        return;
+      }
+
+      // Safety timeout: 15s so the form is never indefinitely locked
+      setTimeout(() => {
+        if (turnstileResolveRef.current) {
+          turnstileResolveRef.current = null;
+          turnstileRejectRef.current = null;
+          reject(new Error("Turnstile verification timed out. Please try again."));
+        }
+      }, 15000);
+    });
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -158,6 +228,20 @@ export default function ContactForm() {
     setFieldErrors({});
     setServerError(null);
 
+    let token: string | undefined;
+    try {
+      token = await obtainTurnstileToken();
+    } catch (err) {
+      setStatus("error");
+      resetTurnstile();
+      setServerError(
+        err instanceof Error && err.message.includes("timed out")
+          ? "Verification challenge timed out. Please check your connection and try again."
+          : "Bot verification was unsuccessful. Please try again or reach out by email."
+      );
+      return;
+    }
+
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -166,7 +250,7 @@ export default function ContactForm() {
         },
         body: JSON.stringify({
           ...form,
-          turnstileToken: turnstileToken || undefined,
+          turnstileToken: token || undefined,
         }),
       });
 
@@ -174,6 +258,7 @@ export default function ContactForm() {
 
       if (!response.ok || !data?.success) {
         setStatus("error");
+        resetTurnstile();
         if (data?.fieldErrors) {
           setFieldErrors(data.fieldErrors);
           if (data.fieldErrors.name) nameRef.current?.focus();
@@ -198,9 +283,10 @@ export default function ContactForm() {
       // Success: clear form fields
       setStatus("success");
       setForm(INITIAL_FORM);
-      setTurnstileToken("");
+      resetTurnstile();
     } catch {
       setStatus("error");
+      resetTurnstile();
       setServerError(
         "Network connection error. Please check your internet connection or email directly."
       );
@@ -212,7 +298,7 @@ export default function ContactForm() {
     setServerError(null);
     setFieldErrors({});
     setForm(INITIAL_FORM);
-    setTurnstileToken("");
+    resetTurnstile();
     setTimeout(() => {
       nameRef.current?.focus();
     }, 0);
@@ -251,7 +337,7 @@ export default function ContactForm() {
                 Message sent!
               </h3>
               <p className="text-base text-muted leading-[1.65]">
-                Thanks for reaching out. I&apos;ll get back to you as soon as I can.
+                Thanks for reaching out. Your message has been sent successfully.
               </p>
             </div>
           </div>
@@ -476,9 +562,9 @@ export default function ContactForm() {
         )}
       </div>
 
-      {/* Optional Turnstile Container */}
+      {/* Invisible Turnstile Container (zero layout space) */}
       {turnstileSiteKey && (
-        <div id={turnstileContainerId} className="pt-1 min-h-[65px]" />
+        <div id={turnstileContainerId} aria-hidden="true" />
       )}
 
       {/* Submit Button & Secondary Direct Contact */}
