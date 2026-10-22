@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { siteConfig, SITE_URL, SOCIAL_LINKS } from "@/lib/site";
 import { projects } from "@/data/projects";
+import ContactForm from "@/components/ContactForm";
 
 export const metadata: Metadata = {
   title: {
@@ -116,21 +117,20 @@ export default function Home() {
         </section>
 
         {/* 3. Contact */}
-        <section id="contact" className="space-y-4">
+        <section id="contact" className="space-y-6">
           <div className="font-mono text-[12px] uppercase text-muted tracking-wider">
             Contact
           </div>
           <p className="text-base text-muted leading-[1.65]">
-            Open to backend engineering roles.
-          </p>
-          <div>
+            Open to backend engineering roles. Reach out using the form below or email me directly at{" "}
             <a
               href={siteConfig.links.email}
               className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors text-base"
             >
               {siteConfig.links.email.replace("mailto:", "")}
-            </a>
-          </div>
+            </a>.
+          </p>
+          <ContactForm />
         </section>
       </div>
     </>
