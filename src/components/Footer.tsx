@@ -9,10 +9,10 @@ export default function Footer() {
           <span>&copy; 2026 Abdulrahmon Sulaimon</span>
           <span aria-hidden="true">·</span>
           <Link
-            href="/#privacy"
+            href="/privacy"
             className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors"
           >
-            Privacy
+            Privacy Policy
           </Link>
         </div>
         <div className="flex items-center gap-6">
