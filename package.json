@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test tests/contact.test.ts",
+    "test": "node --experimental-strip-types --test tests/contact.test.ts tests/mdx.test.ts",
     "check:links": "node scripts/check-links.mjs"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "rehype-pretty-code": "^0.14.5",
+    "remark-gfm": "^4.0.1",
     "resend": "^6.34.1",
     "shiki": "^4.5.0",
     "zod": "^4.6.7"

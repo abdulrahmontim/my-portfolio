@@ -172,6 +172,15 @@ section, [id] {
   border: 1px solid var(--border);
 }
 
+/* Reset default prose table margins so table sits flush inside wrapper card */
+.prose table {
+  margin: 0 !important;
+}
+
+.prose tbody tr:last-child td {
+  border-bottom-width: 0;
+}
+
 /* --- REHYPE PRETTY CODE & CODE BLOCKS --- */
 [data-rehype-pretty-code-figure] {
   margin: 1.75rem 0;

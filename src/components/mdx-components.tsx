@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import remarkGfm from "remark-gfm";
 import rehypePrettyCode from "rehype-pretty-code";
 import type { MDXRemoteProps } from "next-mdx-remote/rsc";
 
@@ -78,13 +79,54 @@ export function YouTube({ id }: YouTubeProps) {
   );
 }
 
-function CustomTable({ children, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
+function CustomTable({ children, className = "", ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="overflow-x-auto my-6 border border-border rounded-lg">
-      <table className="min-w-full divide-y divide-border" {...props}>
+    <div className="overflow-x-auto my-6 border border-border rounded-lg bg-surface/20">
+      <table className={`min-w-full divide-y divide-border text-sm text-left m-0! my-0! ${className}`} {...props}>
         {children}
       </table>
     </div>
+  );
+}
+
+function CustomThead({ children, className = "", ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+  return (
+    <thead className={`bg-surface/60 ${className}`} {...props}>
+      {children}
+    </thead>
+  );
+}
+
+function CustomTh({ children, className = "", ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <th
+      className={`px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted font-medium border-b border-border ${className}`}
+      {...props}
+    >
+      {children}
+    </th>
+  );
+}
+
+function CustomTd({ children, className = "", ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <td
+      className={`px-4 py-3 text-sm text-text border-b border-border/40 ${className}`}
+      {...props}
+    >
+      {children}
+    </td>
+  );
+}
+
+function CustomTr({ children, className = "", ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
+  return (
+    <tr
+      className={`transition-colors hover:bg-surface/40 last:border-b-0 ${className}`}
+      {...props}
+    >
+      {children}
+    </tr>
   );
 }
 
@@ -149,12 +191,17 @@ export const mdxComponents = {
   Figure,
   YouTube,
   table: CustomTable,
+  thead: CustomThead,
+  th: CustomTh,
+  td: CustomTd,
+  tr: CustomTr,
   a: CustomLink,
   img: CustomImg,
 };
 
 export const mdxRemoteOptions: MDXRemoteProps["options"] = {
   mdxOptions: {
+    remarkPlugins: [remarkGfm],
     rehypePlugins: [
       [
         rehypePrettyCode,
