@@ -87,25 +87,51 @@ export function sanitizeErrorMessage(error: unknown, secretToRedact?: string): s
 }
 
 /**
+ * Sanitizes an IP address string by stripping IPv4 port numbers, enclosing IPv6 brackets,
+ * and trimming leading/trailing whitespace.
+ */
+export function sanitizeIp(ip: string): string {
+  let cleaned = ip.trim();
+  // Strip port from IPv4 if present (e.g. 203.0.113.195:443 -> 203.0.113.195)
+  if (/^(\d{1,3}\.){3}\d{1,3}:\d+$/.test(cleaned)) {
+    cleaned = cleaned.replace(/:\d+$/, "");
+  }
+  // Strip enclosing brackets from IPv6 if present (e.g. [2001:db8::1] -> 2001:db8::1)
+  if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  return cleaned || "anonymous";
+}
+
+/**
  * Safely extracts client IP address, prioritizing trusted edge infrastructure headers.
- * Does not trust arbitrary unverified client headers.
+ * On Vercel, `x-vercel-ip` is injected by Vercel edge routers and cannot be spoofed by clients.
+ * When present, it supersedes all other headers.
  */
 export function extractClientIp(headers: Headers): string {
-  // 1. Edge-injected headers (trusted on Vercel and Cloudflare)
+  // 1. Vercel edge-injected header (overwritten by Vercel edge network; cannot be spoofed)
   const vercelIp = headers.get("x-vercel-ip");
-  if (vercelIp && vercelIp.trim()) return vercelIp.trim();
+  if (vercelIp && vercelIp.trim()) return sanitizeIp(vercelIp);
 
+  const vercelForwardedFor = headers.get("x-vercel-forwarded-for");
+  if (vercelForwardedFor) {
+    const parts = vercelForwardedFor.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 0) return sanitizeIp(parts[0]);
+  }
+
+  // 2. Cloudflare Edge header (used when behind Cloudflare proxy without Vercel edge header)
   const cfIp = headers.get("cf-connecting-ip");
-  if (cfIp && cfIp.trim()) return cfIp.trim();
+  if (cfIp && cfIp.trim()) return sanitizeIp(cfIp);
 
+  // 3. Reverse proxy real IP header
   const realIp = headers.get("x-real-ip");
-  if (realIp && realIp.trim()) return realIp.trim();
+  if (realIp && realIp.trim()) return sanitizeIp(realIp);
 
-  // 2. Fallback to X-Forwarded-For: take first non-empty IP entry
+  // 4. Fallback to X-Forwarded-For: take first non-empty IP entry
   const forwardedFor = headers.get("x-forwarded-for");
   if (forwardedFor) {
     const parts = forwardedFor.split(",").map((s) => s.trim()).filter(Boolean);
-    if (parts.length > 0) return parts[0];
+    if (parts.length > 0) return sanitizeIp(parts[0]);
   }
 
   return "anonymous";
@@ -288,9 +314,69 @@ export interface RateLimitOptions {
 }
 
 /**
+ * Atomic Redis Lua script for multi-window rate limiting.
+ * KEYS[1]: shortKey, KEYS[2]: dailyKey
+ * ARGV[1]: shortMax, ARGV[2]: dailyMax, ARGV[3]: shortSeconds, ARGV[4]: dailySeconds
+ * Returns: { 1, retryAfter, reason } if limited, or { 0, 0, "ok" } if allowed.
+ * Atomically checks both counters before any increment, preventing race conditions,
+ * missing TTLs, and counter inflation from blocked requests.
+ */
+export const RATE_LIMIT_LUA_SCRIPT = `
+local shortMax = tonumber(ARGV[1])
+local dailyMax = tonumber(ARGV[2])
+local shortSec = tonumber(ARGV[3])
+local dailySec = tonumber(ARGV[4])
+
+local shortVal = redis.call('GET', KEYS[1])
+local dailyVal = redis.call('GET', KEYS[2])
+local shortCount = shortVal and tonumber(shortVal) or 0
+local dailyCount = dailyVal and tonumber(dailyVal) or 0
+
+if shortCount >= shortMax then
+  local ttl = redis.call('TTL', KEYS[1])
+  if ttl < 0 then
+    redis.call('EXPIRE', KEYS[1], shortSec)
+    ttl = shortSec
+  end
+  return { 1, ttl, 'short' }
+end
+
+if dailyCount >= dailyMax then
+  local ttl = redis.call('TTL', KEYS[2])
+  if ttl < 0 then
+    redis.call('EXPIRE', KEYS[2], dailySec)
+    ttl = dailySec
+  end
+  return { 1, ttl, 'daily' }
+end
+
+local newShort = redis.call('INCR', KEYS[1])
+if newShort == 1 then
+  redis.call('EXPIRE', KEYS[1], shortSec)
+else
+  local ttl = redis.call('TTL', KEYS[1])
+  if ttl < 0 then
+    redis.call('EXPIRE', KEYS[1], shortSec)
+  end
+end
+
+local newDaily = redis.call('INCR', KEYS[2])
+if newDaily == 1 then
+  redis.call('EXPIRE', KEYS[2], dailySec)
+else
+  local ttl = redis.call('TTL', KEYS[2])
+  if ttl < 0 then
+    redis.call('EXPIRE', KEYS[2], dailySec)
+  end
+end
+
+return { 0, 0, 'ok' }
+`.trim();
+
+/**
  * Checks rate limits for a client IP address.
  * If Upstash Redis REST credentials are provided (UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN),
- * uses an atomic Redis pipeline for distributed persistence across serverless lambdas.
+ * uses an atomic Redis Lua script for distributed persistence across serverless lambdas.
  * Otherwise, falls back to the in-memory multi-window limiter.
  */
 export async function checkRateLimit(
@@ -313,37 +399,39 @@ export async function checkRateLimit(
       const shortSeconds = Math.ceil(shortWindowMs / 1000);
       const dailySeconds = Math.ceil(dailyWindowMs / 1000);
 
-      const response = await fetch(`${upstashUrl}/pipeline`, {
+      const response = await fetch(`${upstashUrl}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${upstashToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify([
-          ["INCR", shortKey],
-          ["EXPIRE", shortKey, shortSeconds, "NX"],
-          ["TTL", shortKey],
-          ["INCR", dailyKey],
-          ["EXPIRE", dailyKey, dailySeconds, "NX"],
-          ["TTL", dailyKey],
+          "EVAL",
+          RATE_LIMIT_LUA_SCRIPT,
+          "2",
+          shortKey,
+          dailyKey,
+          String(shortMax),
+          String(dailyMax),
+          String(shortSeconds),
+          String(dailySeconds),
         ]),
       });
 
       if (response.ok) {
-        const results = (await response.json()) as Array<{ result: number }>;
-        const shortCount = results?.[0]?.result ?? 0;
-        const shortTtl = results?.[2]?.result ?? shortSeconds;
-        const dailyCount = results?.[3]?.result ?? 0;
-        const dailyTtl = results?.[5]?.result ?? dailySeconds;
+        const data = (await response.json()) as {
+          result?: [number, number, string];
+        };
+        const [isLimited, ttl, reason] = data?.result ?? [0, 0, "ok"];
 
-        if (shortCount > shortMax) {
-          const retryAfter = shortTtl > 0 ? shortTtl : shortSeconds;
-          return { limited: true, retryAfter, reason: "short" };
-        }
-
-        if (dailyCount > dailyMax) {
-          const retryAfter = dailyTtl > 0 ? dailyTtl : dailySeconds;
-          return { limited: true, retryAfter, reason: "daily" };
+        if (isLimited === 1) {
+          const fallbackSec = reason === "daily" ? dailySeconds : shortSeconds;
+          const retryAfter = ttl > 0 ? ttl : fallbackSec;
+          return {
+            limited: true,
+            retryAfter,
+            reason: reason === "daily" ? "daily" : "short",
+          };
         }
 
         return { limited: false, retryAfter: 0 };
@@ -365,21 +453,37 @@ export async function checkRateLimit(
 export interface TurnstileVerificationResult {
   success: boolean;
   bypassed?: boolean;
+  misconfigured?: boolean;
   error?: string;
 }
 
 /**
  * Verifies Cloudflare Turnstile bot verification token with Cloudflare's Siteverify API.
- * If TURNSTILE_SECRET_KEY is not configured, gracefully bypasses verification to avoid breaking the form.
+ * In production (NODE_ENV === "production"), TURNSTILE_SECRET_KEY is strictly required and fails closed
+ * if missing or empty, rejecting submissions with a 500 configuration error.
+ * In non-production environments (development / test), a missing secret gracefully bypasses
+ * verification for developer convenience.
  */
 export async function verifyTurnstileToken(
   token?: string,
   clientIp?: string,
-  secretKey?: string
+  secretKey?: string,
+  isProduction: boolean = process.env.NODE_ENV === "production"
 ): Promise<TurnstileVerificationResult> {
   const secret = secretKey ?? process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
-    // Turnstile is optional / unconfigured; bypass verification
+    if (isProduction) {
+      console.error(
+        "Turnstile configuration error: TURNSTILE_SECRET_KEY is missing in production environment."
+      );
+      return {
+        success: false,
+        misconfigured: true,
+        error:
+          "Verification service is temporarily unavailable. Please try again or reach out by email.",
+      };
+    }
+    // Explicitly non-production environment: allow graceful local development bypass
     return { success: true, bypassed: true };
   }
 
@@ -496,6 +600,7 @@ export interface ContactServiceOptions {
   toEmail?: string;
   fromEmail?: string;
   turnstileSecretKey?: string;
+  isProduction?: boolean;
   clientIp?: string;
   contentLength?: number;
   resendClient?: ResendLikeClient;
@@ -503,7 +608,8 @@ export interface ContactServiceOptions {
   turnstileVerifier?: (
     token?: string,
     clientIp?: string,
-    secret?: string
+    secret?: string,
+    isProduction?: boolean
   ) => Promise<TurnstileVerificationResult>;
 }
 
@@ -511,7 +617,7 @@ export async function processContactSubmission(
   body: unknown,
   options: ContactServiceOptions = {}
 ): Promise<ContactServiceResult> {
-  const ip = options.clientIp || "anonymous";
+  const ip = sanitizeIp(options.clientIp || "anonymous");
 
   // 1. Content-Length check (> 64KB rejected with 413)
   if (options.contentLength && options.contentLength > 65536) {
@@ -524,21 +630,8 @@ export async function processContactSubmission(
     };
   }
 
-  // 2. Client IP rate limiting (5 per 10min, 20 per day)
-  const rateLimitCheckFn = options.rateLimitCheck ?? checkRateLimit;
-  const rateLimitResult = await rateLimitCheckFn(ip);
-  if (rateLimitResult.limited) {
-    return {
-      status: 429,
-      retryAfter: rateLimitResult.retryAfter,
-      data: {
-        success: false,
-        error: "Too many requests. Please wait a while before sending another message.",
-      },
-    };
-  }
-
-  // 3. Validation
+  // 2. Schema Validation (Input boundaries and field validation)
+  // Validation errors (400) do NOT consume rate limit quota
   const parseResult = contactSchema.safeParse(body);
   if (!parseResult.success) {
     const fieldErrors: Record<string, string> = {};
@@ -560,7 +653,8 @@ export async function processContactSubmission(
 
   const { name, email, subject, message, _hp, turnstileToken } = parseResult.data;
 
-  // 4. Honeypot check: If filled, silently accept with 200 without dispatching email
+  // 3. Honeypot check: If filled, silently accept with 200 without dispatching email
+  // Bots trapped by honeypot do not consume rate limit quota
   if (_hp && _hp.trim().length > 0) {
     return {
       status: 200,
@@ -571,24 +665,8 @@ export async function processContactSubmission(
     };
   }
 
-  // 5. Cloudflare Turnstile Verification (if configured)
-  const turnstileVerifierFn = options.turnstileVerifier ?? verifyTurnstileToken;
-  const turnstileRes = await turnstileVerifierFn(
-    turnstileToken,
-    ip,
-    options.turnstileSecretKey
-  );
-  if (!turnstileRes.success) {
-    return {
-      status: 400,
-      data: {
-        success: false,
-        error: turnstileRes.error || "Bot verification failed.",
-      },
-    };
-  }
-
-  // 6. Idempotency Check (prevent duplicate sends within 2 minutes)
+  // 4. Idempotency Check (prevent duplicate sends within 2 minutes)
+  // Re-submitting identical payload does not consume additional rate limit quota
   const submissionHash = createSubmissionHash(ip, name, email, message);
   const now = Date.now();
   const cached = recentSubmissions.get(submissionHash);
@@ -599,6 +677,46 @@ export async function processContactSubmission(
         success: true,
         message: "Thank you! Your message has been sent successfully. I will get back to you soon.",
         id: cached.id,
+      },
+    };
+  }
+
+  // 5. Client IP rate limiting (5 per 10min, 20 per day)
+  const rateLimitCheckFn = options.rateLimitCheck ?? checkRateLimit;
+  const rateLimitResult = await rateLimitCheckFn(ip);
+  if (rateLimitResult.limited) {
+    return {
+      status: 429,
+      retryAfter: rateLimitResult.retryAfter,
+      data: {
+        success: false,
+        error: "Too many requests. Please wait a while before sending another message.",
+      },
+    };
+  }
+
+  // 6. Cloudflare Turnstile Verification
+  // In production, fails closed with 500 if unconfigured; in development, bypasses cleanly.
+  // Challenge failures (400) consume quota to prevent bot flood attacks.
+  const turnstileVerifierFn = options.turnstileVerifier ?? verifyTurnstileToken;
+  const isProduction = options.isProduction ?? (process.env.NODE_ENV === "production");
+  const turnstileRes = await turnstileVerifierFn(
+    turnstileToken,
+    ip,
+    options.turnstileSecretKey,
+    isProduction
+  );
+  if (!turnstileRes.success) {
+    const isMisconfigured = Boolean(turnstileRes.misconfigured);
+    return {
+      status: isMisconfigured ? 500 : 400,
+      data: {
+        success: false,
+        error:
+          turnstileRes.error ||
+          (isMisconfigured
+            ? "Verification service is temporarily unavailable. Please reach out directly by email."
+            : "Bot verification failed."),
       },
     };
   }

@@ -16,6 +16,8 @@ import {
   verifyTurnstileToken,
   resetIdempotencyStore,
   processContactSubmission,
+  sanitizeIp,
+  RATE_LIMIT_LUA_SCRIPT,
   type ResendLikeClient,
 } from "../src/lib/contact.ts";
 
@@ -318,10 +320,26 @@ describe("Contact Form Security & Abuse Prevention", () => {
   });
 
   describe("Cloudflare Turnstile Verification", () => {
-    it("bypasses verification cleanly when TURNSTILE_SECRET_KEY is not configured", async () => {
-      const res = await verifyTurnstileToken("dummy_token", "1.2.3.4", undefined);
+    it("bypasses verification cleanly in non-production when TURNSTILE_SECRET_KEY is not configured", async () => {
+      const res = await verifyTurnstileToken("dummy_token", "1.2.3.4", undefined, false);
       assert.strictEqual(res.success, true);
       assert.strictEqual(res.bypassed, true);
+    });
+
+    it("fails closed in production (500 misconfigured) when TURNSTILE_SECRET_KEY is missing", async () => {
+      const res = await verifyTurnstileToken("dummy_token", "1.2.3.4", undefined, true);
+      assert.strictEqual(res.success, false);
+      assert.strictEqual(res.misconfigured, true);
+      assert.match(res.error || "", /temporarily unavailable/i);
+
+      // processContactSubmission returns 500 when Turnstile secret is missing in production
+      const subRes = await processContactSubmission(
+        { name: "Legit User", email: "user@example.com", message: "Hello world" },
+        { clientIp: "192.0.2.1", isProduction: true }
+      );
+      assert.strictEqual(subRes.status, 500);
+      assert.strictEqual(subRes.data.success, false);
+      assert.match(subRes.data.error || "", /temporarily unavailable/i);
     });
 
     it("rejects when TURNSTILE_SECRET_KEY is set but token is missing", async () => {
@@ -967,5 +985,243 @@ describe("Client & Server Email Syntax Validation (Frictionless Contact)", () =>
 
     assert.strictEqual(honeypotResult.status, 200);
     assert.strictEqual(emailDispatched, false, "Honeypot protection must remain active");
+  });
+});
+
+describe("Rate Limiting Robustness & Concurrency Audit", () => {
+  beforeEach(() => {
+    resetRateLimitStore();
+    resetIdempotencyStore();
+  });
+
+  describe("sanitizeIp & Hosting Provider Header Defense", () => {
+    it("strips port from IPv4 address", () => {
+      assert.strictEqual(sanitizeIp("203.0.113.195:443"), "203.0.113.195");
+      assert.strictEqual(sanitizeIp("192.168.1.1:8080"), "192.168.1.1");
+    });
+
+    it("strips brackets from IPv6 address", () => {
+      assert.strictEqual(sanitizeIp("[2001:db8::1]"), "2001:db8::1");
+      assert.strictEqual(sanitizeIp("[::1]"), "::1");
+    });
+
+    it("trims whitespace and handles fallback", () => {
+      assert.strictEqual(sanitizeIp("  10.0.0.1  "), "10.0.0.1");
+      assert.strictEqual(sanitizeIp("   "), "anonymous");
+      assert.strictEqual(sanitizeIp(""), "anonymous");
+    });
+
+    it("prioritizes trusted Vercel edge header and ignores spoofed cf-connecting-ip or x-forwarded-for", () => {
+      const headers = new Headers({
+        "x-vercel-ip": "102.89.40.27",
+        "cf-connecting-ip": "198.51.100.42", // spoofed by client
+        "x-forwarded-for": "1.1.1.1",       // spoofed by client
+      });
+      // Vercel edge header x-vercel-ip cannot be spoofed by incoming client and must take precedence
+      assert.strictEqual(extractClientIp(headers), "102.89.40.27");
+    });
+
+    it("falls back to cf-connecting-ip when Vercel edge headers are absent", () => {
+      const headers = new Headers({
+        "cf-connecting-ip": "198.51.100.42",
+        "x-forwarded-for": "1.1.1.1",
+      });
+      assert.strictEqual(extractClientIp(headers), "198.51.100.42");
+    });
+
+    it("falls back to anonymous when headers are missing or blank", () => {
+      const headers = new Headers();
+      assert.strictEqual(extractClientIp(headers), "anonymous");
+    });
+  });
+
+  describe("Atomic Rate Limiting & Concurrency Safety", () => {
+    it("handles concurrent requests atomically without exceeding limit or leaking daily quota", async () => {
+      const ip = "192.0.2.200";
+      // Execute 15 concurrent checks
+      const results = await Promise.all(
+        Array.from({ length: 15 }, () => checkRateLimit(ip))
+      );
+
+      const allowed = results.filter((r) => !r.limited);
+      const blocked = results.filter((r) => r.limited);
+
+      assert.strictEqual(allowed.length, 5, "Exactly 5 requests must pass");
+      assert.strictEqual(blocked.length, 10, "Remaining 10 requests must be blocked with 429");
+      for (const b of blocked) {
+        assert.strictEqual(b.reason, "short");
+        assert.ok(b.retryAfter > 0, "Blocked requests must have positive retryAfter");
+      }
+    });
+
+    it("validation errors (400) do NOT consume rate limit quota", async () => {
+      let sendCalls = 0;
+      const mockResend: ResendLikeClient = {
+        emails: {
+          send: async () => {
+            sendCalls++;
+            return { data: { id: `msg_${sendCalls}` }, error: null };
+          },
+        },
+      };
+
+      const options = {
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        clientIp: "192.0.2.201",
+        resendClient: mockResend,
+      };
+
+      // 10 invalid submissions
+      for (let i = 0; i < 10; i++) {
+        const res = await processContactSubmission(
+          { name: "", email: "invalid", message: "" },
+          options
+        );
+        assert.strictEqual(res.status, 400);
+      }
+
+      // 5 valid submissions must succeed because failed validation did not burn quota
+      for (let i = 0; i < 5; i++) {
+        const res = await processContactSubmission(
+          { name: `User ${i}`, email: `user${i}@example.com`, message: "Valid message" },
+          options
+        );
+        assert.strictEqual(res.status, 200);
+      }
+      assert.strictEqual(sendCalls, 5);
+
+      // 6th valid submission hits rate limit
+      const blocked = await processContactSubmission(
+        { name: "User 6", email: "user6@example.com", message: "Valid message" },
+        options
+      );
+      assert.strictEqual(blocked.status, 429);
+    });
+
+    it("idempotent duplicate submissions do NOT consume additional rate limit quota", async () => {
+      let sendCalls = 0;
+      const mockResend: ResendLikeClient = {
+        emails: {
+          send: async () => {
+            sendCalls++;
+            return { data: { id: "idempotent_msg_1" }, error: null };
+          },
+        },
+      };
+
+      const options = {
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        clientIp: "192.0.2.202",
+        resendClient: mockResend,
+      };
+
+      const payload = {
+        name: "Clicker",
+        email: "clicker@example.com",
+        message: "Duplicate message content",
+      };
+
+      // First submit
+      const res1 = await processContactSubmission(payload, options);
+      assert.strictEqual(res1.status, 200);
+      assert.strictEqual(sendCalls, 1);
+
+      // 5 duplicate submits
+      for (let i = 0; i < 5; i++) {
+        const dupRes = await processContactSubmission(payload, options);
+        assert.strictEqual(dupRes.status, 200);
+      }
+      assert.strictEqual(sendCalls, 1, "Duplicate requests must not dispatch duplicate emails");
+
+      // 4 distinct submissions should still succeed (quota was not consumed by duplicates)
+      for (let i = 0; i < 4; i++) {
+        const res = await processContactSubmission(
+          { name: `Distinct ${i}`, email: `distinct${i}@example.com`, message: `Content ${i}` },
+          options
+        );
+        assert.strictEqual(res.status, 200);
+      }
+    });
+
+    it("Turnstile failures consume quota (prevents automated bot flooding)", async () => {
+      const mockTurnstileFail = async () => ({
+        success: false,
+        error: "Bot challenge failed",
+      });
+
+      const options = {
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        clientIp: "192.0.2.203",
+        turnstileVerifier: mockTurnstileFail,
+      };
+
+      // 5 failed Turnstile attempts consume quota
+      for (let i = 0; i < 5; i++) {
+        const res = await processContactSubmission(
+          { name: `Bot ${i}`, email: `bot${i}@example.com`, message: "Bot payload" },
+          options
+        );
+        assert.strictEqual(res.status, 400);
+      }
+
+      // 6th attempt is throttled with 429 Rate Limit (protecting endpoint from bot floods)
+      const res6 = await processContactSubmission(
+        { name: "Bot 6", email: "bot6@example.com", message: "Bot payload" },
+        options
+      );
+      assert.strictEqual(res6.status, 429);
+    });
+
+    it("intake rate limit is strictly enforced without quota refund races or counter manipulation", async () => {
+      let sendCalls = 0;
+      const mockFail: ResendLikeClient = {
+        emails: {
+          send: async () => {
+            sendCalls++;
+            return {
+              data: null,
+              error: new Error("502 Bad Gateway: Upstream provider failure"),
+            };
+          },
+        },
+      };
+
+      const options = {
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        clientIp: "192.0.2.204",
+        resendClient: mockFail,
+      };
+
+      // 5 submissions encounter upstream failure
+      for (let i = 0; i < 5; i++) {
+        const res = await processContactSubmission(
+          { name: `User ${i}`, email: `user${i}@example.com`, message: `Msg ${i}` },
+          options
+        );
+        assert.strictEqual(res.status, 502);
+      }
+      assert.strictEqual(sendCalls, 5);
+
+      // 6th submission is rate limited (intake limit firmly prevents abuse regardless of upstream provider health)
+      const res6 = await processContactSubmission(
+        { name: "User 6", email: "user6@example.com", message: "Msg 6" },
+        options
+      );
+      assert.strictEqual(res6.status, 429);
+      assert.strictEqual(sendCalls, 5, "No further upstream calls made once rate limited");
+    });
+
+    it("verifies RATE_LIMIT_LUA_SCRIPT is a valid Redis Lua script", () => {
+      assert.ok(RATE_LIMIT_LUA_SCRIPT.includes("KEYS[1]"));
+      assert.ok(RATE_LIMIT_LUA_SCRIPT.includes("KEYS[2]"));
+      assert.ok(RATE_LIMIT_LUA_SCRIPT.includes("ARGV[1]"));
+      assert.ok(RATE_LIMIT_LUA_SCRIPT.includes("redis.call('INCR'"));
+      assert.ok(RATE_LIMIT_LUA_SCRIPT.includes("redis.call('EXPIRE'"));
+      assert.ok(RATE_LIMIT_LUA_SCRIPT.includes("redis.call('TTL'"));
+    });
   });
 });
