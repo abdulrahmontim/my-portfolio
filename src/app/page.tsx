@@ -121,15 +121,14 @@ export default function Home() {
           <div className="font-mono text-[12px] uppercase text-muted tracking-wider">
             Contact
           </div>
-          <p className="text-base text-muted leading-[1.65]">
-            Open to backend engineering roles. Reach out using the form below or email me directly at{" "}
-            <a
-              href={siteConfig.links.email}
-              className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors text-base"
-            >
-              {siteConfig.links.email.replace("mailto:", "")}
-            </a>.
-          </p>
+          <div className="space-y-2">
+            <h2 className="text-[20px] font-semibold text-text">
+              Get in touch
+            </h2>
+            <p className="text-base text-muted leading-[1.65]">
+              Building something interesting? Let&apos;s connect. I&apos;m open to backend engineering opportunities and collaborations.
+            </p>
+          </div>
           <ContactForm />
         </section>
       </div>

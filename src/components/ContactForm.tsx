@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useId, useEffect } from "react";
+import { useState, useId, useEffect, useRef } from "react";
 
 interface FormState {
   name: string;
@@ -23,7 +23,7 @@ export default function ContactForm() {
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const nameId = useId();
@@ -32,6 +32,10 @@ export default function ContactForm() {
   const messageId = useId();
   const hpId = useId();
   const turnstileContainerId = useId();
+
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const messageRef = useRef<HTMLTextAreaElement>(null);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
@@ -100,7 +104,8 @@ export default function ContactForm() {
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    // Clear field-specific error as user edits
+
+    // Clear field-specific error when the user edits that field
     if (fieldErrors[name]) {
       setFieldErrors((prev) => {
         const next = { ...prev };
@@ -115,31 +120,37 @@ export default function ContactForm() {
 
     if (status === "submitting") return;
 
-    // Client-side quick validation
+    // Client-side validation: reject empty or whitespace-only values
     const errors: Record<string, string> = {};
     if (!form.name.trim()) {
       errors.name = "Please enter your name.";
     }
-    if (!form.email.trim()) {
-      errors.email = "Please enter your email address.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+    const trimmedEmail = form.email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       errors.email = "Please enter a valid email address.";
     }
     if (!form.message.trim()) {
       errors.message = "Please enter a message.";
-    } else if (form.message.trim().length < 5) {
-      errors.message = "Message must be at least 5 characters.";
     }
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      setGeneralError("Please fix the errors indicated below.");
+      setServerError(null);
+
+      // Focus the first invalid field
+      if (errors.name) {
+        nameRef.current?.focus();
+      } else if (errors.email) {
+        emailRef.current?.focus();
+      } else if (errors.message) {
+        messageRef.current?.focus();
+      }
       return;
     }
 
     setStatus("submitting");
     setFieldErrors({});
-    setGeneralError(null);
+    setServerError(null);
 
     try {
       const response = await fetch("/api/contact", {
@@ -159,15 +170,18 @@ export default function ContactForm() {
         setStatus("error");
         if (data?.fieldErrors) {
           setFieldErrors(data.fieldErrors);
+          if (data.fieldErrors.name) nameRef.current?.focus();
+          else if (data.fieldErrors.email) emailRef.current?.focus();
+          else if (data.fieldErrors.message) messageRef.current?.focus();
         }
 
         // Check if rate limited with Retry-After header
         const retryAfter = response.headers.get("Retry-After");
         const rateLimitNotice = retryAfter
-          ? ` (Please wait ${Math.ceil(parseInt(retryAfter, 10) / 60)} minutes before trying again.)`
+          ? ` Please wait ${Math.ceil(parseInt(retryAfter, 10) / 60)} minutes before trying again.`
           : "";
 
-        setGeneralError(
+        setServerError(
           (data?.error ||
             "Unable to deliver your message at this time. Please try again or reach out by email.") +
             rateLimitNotice
@@ -185,7 +199,7 @@ export default function ContactForm() {
       setTurnstileToken("");
     } catch {
       setStatus("error");
-      setGeneralError(
+      setServerError(
         "Network connection error. Please check your internet connection or email directly."
       );
     }
@@ -194,7 +208,7 @@ export default function ContactForm() {
   const handleReset = () => {
     setStatus("idle");
     setSuccessMessage(null);
-    setGeneralError(null);
+    setServerError(null);
     setFieldErrors({});
     setForm(INITIAL_FORM);
     setTurnstileToken("");
@@ -202,13 +216,7 @@ export default function ContactForm() {
 
   if (status === "success") {
     return (
-      <div
-        role="alert"
-        className="p-6 border border-border bg-surface rounded-lg space-y-4"
-      >
-        <div className="font-mono text-[12px] uppercase text-muted tracking-wider">
-          Message Sent
-        </div>
+      <div role="status" className="space-y-4">
         <p className="text-base text-text leading-[1.65]">
           {successMessage}
         </p>
@@ -221,6 +229,15 @@ export default function ContactForm() {
             &larr; Send another message
           </button>
         </div>
+        <p className="text-sm text-muted pt-2">
+          Prefer email?{" "}
+          <a
+            href="mailto:abdulrahmonsulaimon60@gmail.com"
+            className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors break-words"
+          >
+            abdulrahmonsulaimon60@gmail.com
+          </a>
+        </p>
       </div>
     );
   }
@@ -229,18 +246,15 @@ export default function ContactForm() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="border border-border bg-surface rounded-lg p-6 space-y-5"
+      className="space-y-5"
     >
-      {generalError && (
+      {serverError && (
         <div
           role="alert"
           aria-live="polite"
-          className="p-3.5 border border-border bg-bg rounded text-sm text-text"
+          className="p-3.5 border border-border bg-surface rounded text-sm text-text"
         >
-          <span className="font-mono text-[12px] uppercase text-muted tracking-wider block mb-1">
-            Notice
-          </span>
-          {generalError}
+          {serverError}
         </div>
       )}
 
@@ -280,6 +294,7 @@ export default function ContactForm() {
             Name <span className="text-primary" aria-hidden="true">*</span>
           </label>
           <input
+            ref={nameRef}
             id={nameId}
             type="text"
             name="name"
@@ -290,7 +305,7 @@ export default function ContactForm() {
             disabled={status === "submitting"}
             autoComplete="name"
             maxLength={100}
-            placeholder="Ada Lovelace"
+            placeholder="Your name"
             value={form.name}
             onChange={handleChange}
             className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -298,6 +313,7 @@ export default function ContactForm() {
           {fieldErrors.name && (
             <p
               id={`${nameId}-error`}
+              role="alert"
               className="text-xs font-mono text-muted pt-0.5"
             >
               {fieldErrors.name}
@@ -313,6 +329,7 @@ export default function ContactForm() {
             Email <span className="text-primary" aria-hidden="true">*</span>
           </label>
           <input
+            ref={emailRef}
             id={emailId}
             type="email"
             name="email"
@@ -323,7 +340,7 @@ export default function ContactForm() {
             disabled={status === "submitting"}
             autoComplete="email"
             maxLength={254}
-            placeholder="ada@example.com"
+            placeholder="you@example.com"
             value={form.email}
             onChange={handleChange}
             className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -331,6 +348,7 @@ export default function ContactForm() {
           {fieldErrors.email && (
             <p
               id={`${emailId}-error`}
+              role="alert"
               className="text-xs font-mono text-muted pt-0.5"
             >
               {fieldErrors.email}
@@ -345,7 +363,7 @@ export default function ContactForm() {
           htmlFor={subjectId}
           className="block font-mono text-[12px] uppercase text-muted tracking-wider"
         >
-          Subject <span className="text-muted font-normal text-[11px]">(Optional)</span>
+          Subject (Optional)
         </label>
         <input
           id={subjectId}
@@ -353,7 +371,7 @@ export default function ContactForm() {
           name="subject"
           disabled={status === "submitting"}
           maxLength={150}
-          placeholder="Role inquiry / System architecture discussion"
+          placeholder="Subject of your message"
           value={form.subject}
           onChange={handleChange}
           className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -361,6 +379,7 @@ export default function ContactForm() {
         {fieldErrors.subject && (
           <p
             id={`${subjectId}-error`}
+            role="alert"
             className="text-xs font-mono text-muted pt-0.5"
           >
             {fieldErrors.subject}
@@ -377,6 +396,7 @@ export default function ContactForm() {
           Message <span className="text-primary" aria-hidden="true">*</span>
         </label>
         <textarea
+          ref={messageRef}
           id={messageId}
           name="message"
           rows={5}
@@ -386,7 +406,7 @@ export default function ContactForm() {
           aria-describedby={fieldErrors.message ? `${messageId}-error` : undefined}
           disabled={status === "submitting"}
           maxLength={5000}
-          placeholder="Hi Abdulrahmon, I'd like to discuss an engineering role / project..."
+          placeholder="Write your message here..."
           value={form.message}
           onChange={handleChange}
           className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors resize-y"
@@ -394,6 +414,7 @@ export default function ContactForm() {
         {fieldErrors.message && (
           <p
             id={`${messageId}-error`}
+            role="alert"
             className="text-xs font-mono text-muted pt-0.5"
           >
             {fieldErrors.message}
@@ -406,8 +427,8 @@ export default function ContactForm() {
         <div id={turnstileContainerId} className="pt-1 min-h-[65px]" />
       )}
 
-      {/* Submit Button */}
-      <div className="pt-2">
+      {/* Submit Button & Secondary Direct Contact */}
+      <div className="pt-2 space-y-4">
         <button
           type="submit"
           disabled={status === "submitting"}
@@ -442,6 +463,16 @@ export default function ContactForm() {
             <span>Send Message &rarr;</span>
           )}
         </button>
+
+        <p className="text-sm text-muted">
+          Prefer email?{" "}
+          <a
+            href="mailto:abdulrahmonsulaimon60@gmail.com"
+            className="text-text underline decoration-border underline-offset-[3px] hover:text-primary hover:decoration-primary transition-colors break-words"
+          >
+            abdulrahmonsulaimon60@gmail.com
+          </a>
+        </p>
       </div>
     </form>
   );

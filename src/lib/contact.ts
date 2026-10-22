@@ -5,13 +5,13 @@ export const contactSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "Name is required")
+    .min(1, "Please enter your name.")
     .max(100, "Name must be 100 characters or less"),
   email: z
     .string()
     .trim()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address")
+    .min(1, "Please enter a valid email address.")
+    .email("Please enter a valid email address.")
     .max(254, "Email must be 254 characters or less"),
   subject: z
     .string()
@@ -22,7 +22,7 @@ export const contactSchema = z.object({
   message: z
     .string()
     .trim()
-    .min(5, "Message must be at least 5 characters")
+    .min(1, "Please enter a message.")
     .max(5000, "Message must be 5000 characters or less"),
   _hp: z.string().optional().default(""),
   turnstileToken: z.string().optional().default(""),

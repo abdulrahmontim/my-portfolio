@@ -105,13 +105,26 @@ describe("Contact Form Security & Abuse Prevention", () => {
       assert.strictEqual(result.success, false);
     });
 
-    it("rejects messages shorter than 5 characters", () => {
-      const result = contactSchema.safeParse({
+    it("rejects empty or whitespace-only messages", () => {
+      const resultEmpty = contactSchema.safeParse({
         name: "Tester",
         email: "test@example.com",
-        message: "Hi",
+        message: "",
       });
-      assert.strictEqual(result.success, false);
+      assert.strictEqual(resultEmpty.success, false);
+      if (!resultEmpty.success) {
+        assert.strictEqual(resultEmpty.error.issues[0]?.message, "Please enter a message.");
+      }
+
+      const resultWhitespace = contactSchema.safeParse({
+        name: "Tester",
+        email: "test@example.com",
+        message: "   \t\n  ",
+      });
+      assert.strictEqual(resultWhitespace.success, false);
+      if (!resultWhitespace.success) {
+        assert.strictEqual(resultWhitespace.error.issues[0]?.message, "Please enter a message.");
+      }
     });
 
     it("rejects messages longer than 5000 characters", () => {
@@ -529,12 +542,12 @@ describe("processContactSubmission (End-to-End Abuse Protection & Mocked Resend)
     assert.strictEqual(emailSent, false);
   });
 
-  it("5. Rejects invalid and missing fields with 400", async () => {
+  it("5. Rejects invalid and missing fields with 400 and exact error messages", async () => {
     const result = await processContactSubmission(
       {
-        name: "",
+        name: "   ",
         email: "invalid-email",
-        message: "hi",
+        message: "   ",
       },
       {
         apiKey: "re_mock_key",
@@ -544,9 +557,9 @@ describe("processContactSubmission (End-to-End Abuse Protection & Mocked Resend)
 
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.data.success, false);
-    assert.strictEqual(Boolean(result.data.fieldErrors?.name), true);
-    assert.strictEqual(Boolean(result.data.fieldErrors?.email), true);
-    assert.strictEqual(Boolean(result.data.fieldErrors?.message), true);
+    assert.strictEqual(result.data.fieldErrors?.name, "Please enter your name.");
+    assert.strictEqual(result.data.fieldErrors?.email, "Please enter a valid email address.");
+    assert.strictEqual(result.data.fieldErrors?.message, "Please enter a message.");
   });
 
   it("6. Rejects malformed and non-object bodies with 400", async () => {
