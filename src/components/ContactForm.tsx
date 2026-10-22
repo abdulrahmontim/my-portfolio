@@ -252,7 +252,7 @@ export default function ContactForm() {
         <div
           role="alert"
           aria-live="polite"
-          className="p-3.5 border border-border bg-surface rounded text-sm text-text"
+          className="p-3.5 border border-[#b91c1c]/40 dark:border-[#f87171]/40 bg-surface rounded text-sm font-medium text-[#b91c1c] dark:text-[#f87171]"
         >
           {serverError}
         </div>
@@ -291,7 +291,7 @@ export default function ContactForm() {
             htmlFor={nameId}
             className="block font-mono text-[12px] uppercase text-muted tracking-wider"
           >
-            Name <span className="text-primary" aria-hidden="true">*</span>
+            Name
           </label>
           <input
             ref={nameRef}
@@ -308,13 +308,17 @@ export default function ContactForm() {
             placeholder="Your name"
             value={form.name}
             onChange={handleChange}
-            className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className={`w-full bg-bg border ${
+              fieldErrors.name
+                ? "border-[#b91c1c] dark:border-[#f87171] focus:border-[#b91c1c] dark:focus:border-[#f87171] focus:ring-1 focus:ring-[#b91c1c] dark:focus:ring-[#f87171]"
+                : "border-border focus:border-primary focus:ring-1 focus:ring-primary"
+            } rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
           />
           {fieldErrors.name && (
             <p
               id={`${nameId}-error`}
               role="alert"
-              className="text-xs font-mono text-muted pt-0.5"
+              className="text-sm font-medium text-[#b91c1c] dark:text-[#f87171] pt-1.5"
             >
               {fieldErrors.name}
             </p>
@@ -326,7 +330,7 @@ export default function ContactForm() {
             htmlFor={emailId}
             className="block font-mono text-[12px] uppercase text-muted tracking-wider"
           >
-            Email <span className="text-primary" aria-hidden="true">*</span>
+            Email
           </label>
           <input
             ref={emailRef}
@@ -343,13 +347,17 @@ export default function ContactForm() {
             placeholder="you@example.com"
             value={form.email}
             onChange={handleChange}
-            className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className={`w-full bg-bg border ${
+              fieldErrors.email
+                ? "border-[#b91c1c] dark:border-[#f87171] focus:border-[#b91c1c] dark:focus:border-[#f87171] focus:ring-1 focus:ring-[#b91c1c] dark:focus:ring-[#f87171]"
+                : "border-border focus:border-primary focus:ring-1 focus:ring-primary"
+            } rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
           />
           {fieldErrors.email && (
             <p
               id={`${emailId}-error`}
               role="alert"
-              className="text-xs font-mono text-muted pt-0.5"
+              className="text-sm font-medium text-[#b91c1c] dark:text-[#f87171] pt-1.5"
             >
               {fieldErrors.email}
             </p>
@@ -374,13 +382,17 @@ export default function ContactForm() {
           placeholder="Subject of your message"
           value={form.subject}
           onChange={handleChange}
-          className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className={`w-full bg-bg border ${
+            fieldErrors.subject
+              ? "border-[#b91c1c] dark:border-[#f87171] focus:border-[#b91c1c] dark:focus:border-[#f87171] focus:ring-1 focus:ring-[#b91c1c] dark:focus:ring-[#f87171]"
+              : "border-border focus:border-primary focus:ring-1 focus:ring-primary"
+          } rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
         />
         {fieldErrors.subject && (
           <p
             id={`${subjectId}-error`}
             role="alert"
-            className="text-xs font-mono text-muted pt-0.5"
+            className="text-sm font-medium text-[#b91c1c] dark:text-[#f87171] pt-1.5"
           >
             {fieldErrors.subject}
           </p>
@@ -393,7 +405,7 @@ export default function ContactForm() {
           htmlFor={messageId}
           className="block font-mono text-[12px] uppercase text-muted tracking-wider"
         >
-          Message <span className="text-primary" aria-hidden="true">*</span>
+          Message
         </label>
         <textarea
           ref={messageRef}
@@ -409,13 +421,17 @@ export default function ContactForm() {
           placeholder="Write your message here..."
           value={form.message}
           onChange={handleChange}
-          className="w-full bg-bg border border-border rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors resize-y"
+          className={`w-full bg-bg border ${
+            fieldErrors.message
+              ? "border-[#b91c1c] dark:border-[#f87171] focus:border-[#b91c1c] dark:focus:border-[#f87171] focus:ring-1 focus:ring-[#b91c1c] dark:focus:ring-[#f87171]"
+              : "border-border focus:border-primary focus:ring-1 focus:ring-primary"
+          } rounded px-3.5 py-2 text-base text-text placeholder:text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors resize-y`}
         />
         {fieldErrors.message && (
           <p
             id={`${messageId}-error`}
             role="alert"
-            className="text-xs font-mono text-muted pt-0.5"
+            className="text-sm font-medium text-[#b91c1c] dark:text-[#f87171] pt-1.5"
           >
             {fieldErrors.message}
           </p>
