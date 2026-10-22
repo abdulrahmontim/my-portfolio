@@ -790,25 +790,35 @@ describe("Contact Form Success State Contract", () => {
     assert.doesNotMatch(componentCode, /min-h-\[65px\]/);
   });
 
-  it("verifies PrivacyNotice and Footer links are configured correctly without creating new pages", () => {
-    const privacyCode = fs.readFileSync(path.resolve("src/components/PrivacyNotice.tsx"), "utf8");
+  it("verifies separate Privacy section on homepage and Footer link without cluttering contact section", () => {
     const footerCode = fs.readFileSync(path.resolve("src/components/Footer.tsx"), "utf8");
     const pageCode = fs.readFileSync(path.resolve("src/app/page.tsx"), "utf8");
 
-    // Privacy notice content checks
-    assert.match(privacyCode, /id="privacy"/);
-    assert.match(privacyCode, /Resend/);
-    assert.match(privacyCode, /Vercel/);
-    assert.match(privacyCode, /Cloudflare Turnstile/);
-    assert.match(privacyCode, /https:\/\/www\.cloudflare\.com\/en-gb\/turnstile-privacy-policy\//);
-    assert.match(privacyCode, /abdulrahmonsulaimon60@gmail\.com/);
+    // Contact section must NOT contain a privacy notice or details toggle directly under ContactForm
+    const contactSectionMatch = pageCode.match(/<section id="contact"[\s\S]*?<\/section>/);
+    assert.ok(contactSectionMatch, "Contact section must exist");
+    assert.doesNotMatch(
+      contactSectionMatch[0],
+      /<details/i,
+      "Contact section must not contain a details toggle under form"
+    );
+    assert.doesNotMatch(
+      contactSectionMatch[0],
+      /PrivacyNotice/i,
+      "Contact section must not contain PrivacyNotice under form"
+    );
 
-    // Footer link
+    // Separate privacy section at the bottom of the page
+    assert.match(pageCode, /<section id="privacy"/);
+    assert.match(pageCode, /Resend/);
+    assert.match(pageCode, /Vercel/);
+    assert.match(pageCode, /Cloudflare Turnstile/);
+    assert.match(pageCode, /https:\/\/www\.cloudflare\.com\/en-gb\/turnstile-privacy-policy\//);
+    assert.match(pageCode, /abdulrahmonsulaimon60@gmail\.com/);
+
+    // Footer link points to /#privacy
     assert.match(footerCode, /href="\/#privacy"/);
     assert.match(footerCode, /Privacy/);
-
-    // Home page renders PrivacyNotice
-    assert.match(pageCode, /<PrivacyNotice \/>/);
   });
 
   it("verifies globals.css defines entrance animation with prefers-reduced-motion support", () => {

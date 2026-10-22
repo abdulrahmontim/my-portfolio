@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { siteConfig, SITE_URL, SOCIAL_LINKS } from "@/lib/site";
 import { projects } from "@/data/projects";
 import ContactForm from "@/components/ContactForm";
-import PrivacyNotice from "@/components/PrivacyNotice";
 
 export const metadata: Metadata = {
   title: {
@@ -131,7 +130,41 @@ export default function Home() {
             </p>
           </div>
           <ContactForm />
-          <PrivacyNotice />
+        </section>
+
+        {/* 4. Privacy */}
+        <section id="privacy" className="space-y-3 pt-6 border-t border-border scroll-mt-24">
+          <div className="font-mono text-[12px] uppercase text-muted tracking-wider">
+            Privacy
+          </div>
+          <div className="space-y-2 text-xs leading-[1.65] text-muted">
+            <p>
+              The contact form collects your name, email address, message, and an optional subject line to receive and respond to inquiries.
+            </p>
+            <p>
+              Messages are delivered using <span className="text-text font-medium">Resend</span>. This website is hosted on <span className="text-text font-medium">Vercel</span>, which may process standard HTTP request data as part of serving pages and API routes.
+            </p>
+            <p>
+              To detect and prevent automated abuse without intrusive verification challenges, this form integrates <span className="text-text font-medium">Cloudflare Turnstile</span> in invisible mode. For details on how Cloudflare evaluates telemetry, see the{" "}
+              <a
+                href="https://www.cloudflare.com/en-gb/turnstile-privacy-policy/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text underline decoration-border underline-offset-[2px] hover:text-primary hover:decoration-primary transition-colors"
+              >
+                Cloudflare Turnstile Privacy Policy
+              </a>.
+            </p>
+            <p>
+              If you have questions about your submitted information, you can reach out directly via email at{" "}
+              <a
+                href="mailto:abdulrahmonsulaimon60@gmail.com"
+                className="text-text underline decoration-border underline-offset-[2px] hover:text-primary hover:decoration-primary transition-colors"
+              >
+                abdulrahmonsulaimon60@gmail.com
+              </a>.
+            </p>
+          </div>
         </section>
       </div>
     </>
