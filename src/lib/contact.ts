@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { Resend } from "resend";
 
+/**
+ * Standard email syntax pattern (RFC 5322 compatible syntax check with domain and TLD):
+ * Validates standard email syntax structure on both client and server to prevent malformed input.
+ * Note: This verifies basic syntax only; it does not verify that the address is active, owned, or real.
+ */
+export const EMAIL_SYNTAX_REGEX =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+
 export const contactSchema = z.object({
   name: z
     .string()
@@ -11,8 +19,9 @@ export const contactSchema = z.object({
     .string()
     .trim()
     .min(1, "Please enter a valid email address.")
-    .email("Please enter a valid email address.")
-    .max(254, "Email must be 254 characters or less"),
+    .max(254, "Email must be 254 characters or less")
+    .regex(EMAIL_SYNTAX_REGEX, "Please enter a valid email address.")
+    .email("Please enter a valid email address."),
   subject: z
     .string()
     .trim()
