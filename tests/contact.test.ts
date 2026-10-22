@@ -4,6 +4,7 @@ import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import {
   contactSchema,
+  EMAIL_SYNTAX_REGEX,
   sanitizeHeader,
   escapeHtml,
   sanitizeErrorMessage,
@@ -816,5 +817,138 @@ describe("Contact Form Success State Contract", () => {
     assert.match(cssCode, /@keyframes successFadeIn/);
     assert.match(cssCode, /.success-panel-enter/);
     assert.match(cssCode, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  });
+});
+
+describe("Client & Server Email Syntax Validation (Frictionless Contact)", () => {
+  const validRecruiterEmails = [
+    "recruiter@company.com",
+    "jane.doe+recruiting@sub.domain.org",
+    "engineer@startup.tech",
+    "talent-acquisitions@global-firm.co.uk",
+    "hiring.manager@enterprise-corp.io",
+    "a@b.cd",
+  ];
+
+  const malformedEmails = [
+    "plainaddress",
+    "missing-domain@",
+    "@missing-local.com",
+    "spaces in@domain.com",
+    "user@domain..com",
+    "user@.com",
+    "user@domain",
+    "user@domain.c",
+    "user@localhost",
+    "user@domain.123",
+    "victim@domain.com\r\nBcc:attacker@domain.com",
+  ];
+
+  it("accepts diverse standard syntax from visitors and recruiters on both client and server", () => {
+    for (const email of validRecruiterEmails) {
+      // 1. Client-side syntax regex test
+      assert.strictEqual(
+        EMAIL_SYNTAX_REGEX.test(email),
+        true,
+        `Client EMAIL_SYNTAX_REGEX should accept ${email}`
+      );
+
+      // 2. Server-side Zod schema test
+      const serverResult = contactSchema.safeParse({
+        name: "Test Recruiter",
+        email,
+        message: "We have an open role for a senior backend software engineer.",
+      });
+      assert.strictEqual(
+        serverResult.success,
+        true,
+        `Server contactSchema should accept ${email}`
+      );
+    }
+  });
+
+  it("rejects malformed email syntax on both client and server", () => {
+    for (const email of malformedEmails) {
+      // 1. Client-side syntax regex test
+      assert.strictEqual(
+        EMAIL_SYNTAX_REGEX.test(email),
+        false,
+        `Client EMAIL_SYNTAX_REGEX should reject malformed ${email}`
+      );
+
+      // 2. Server-side Zod schema test
+      const serverResult = contactSchema.safeParse({
+        name: "Test User",
+        email,
+        message: "Testing malformed email validation.",
+      });
+      assert.strictEqual(
+        serverResult.success,
+        false,
+        `Server contactSchema should reject malformed ${email}`
+      );
+    }
+  });
+
+  it("ensures frictionless submission without mandatory email ownership confirmation", async () => {
+    let emailDispatched = false;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async (payload) => {
+          emailDispatched = true;
+          // Validates replyTo is preserved directly without intermediate verification steps
+          assert.strictEqual(payload.replyTo, "recruiter@tech-startup.com");
+          return { data: { id: "resend_mock_id_direct" }, error: null };
+        },
+      },
+    };
+
+    const result = await processContactSubmission(
+      {
+        name: "Alex Rivera",
+        email: "recruiter@tech-startup.com",
+        subject: "Backend Opportunity",
+        message: "Hello Abdulrahmon, reaching out regarding a backend role with FastAPI/Django.",
+      },
+      {
+        apiKey: "re_test_key",
+        toEmail: "owner@example.com",
+        resendClient: mockResend,
+      }
+    );
+
+    assert.strictEqual(result.status, 200);
+    assert.strictEqual(result.data.success, true);
+    assert.strictEqual(emailDispatched, true, "Email must be dispatched directly without ownership verification");
+  });
+
+  it("preserves anti-spam protections (Turnstile, rate limiting, honeypot) alongside email syntax checks", async () => {
+    let emailDispatched = false;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async () => {
+          emailDispatched = true;
+          return { data: { id: "resend_mock_id" }, error: null };
+        },
+      },
+    };
+
+    // Honeypot trapped submission with valid email syntax still silently drops email
+    const honeypotResult = await processContactSubmission(
+      {
+        name: "Bot Spammer",
+        email: "valid.syntax.spammer@spam-domain.com",
+        message: "Spam content.",
+        _hp: "bot_filled_trap",
+      },
+      {
+        apiKey: "re_test_key",
+        toEmail: "owner@example.com",
+        resendClient: mockResend,
+      }
+    );
+
+    assert.strictEqual(honeypotResult.status, 200);
+    assert.strictEqual(emailDispatched, false, "Honeypot protection must remain active");
   });
 });

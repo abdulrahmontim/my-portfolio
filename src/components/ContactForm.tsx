@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useId, useEffect, useRef } from "react";
+import { EMAIL_SYNTAX_REGEX } from "@/lib/contact";
 
 interface FormState {
   name: string;
@@ -202,7 +203,7 @@ export default function ContactForm() {
       errors.name = "Please enter your name.";
     }
     const trimmedEmail = form.email.trim();
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    if (!trimmedEmail || !EMAIL_SYNTAX_REGEX.test(trimmedEmail)) {
       errors.email = "Please enter a valid email address.";
     }
     if (!form.message.trim()) {
