@@ -4,9 +4,12 @@ import {
   contactSchema,
   sanitizeHeader,
   escapeHtml,
+  sanitizeErrorMessage,
+  extractClientIp,
   formatContactEmail,
   isRateLimited,
   resetRateLimitStore,
+  checkRateLimit,
   processContactSubmission,
   type ResendLikeClient,
 } from "../src/lib/contact.ts";
@@ -76,6 +79,7 @@ describe("Contact Form Validation & Utilities", () => {
         "missing-domain@",
         "@missing-user.com",
         "spaces in@email.com",
+        "javascript:alert(1)",
       ];
 
       for (const email of invalidEmails) {
@@ -115,6 +119,15 @@ describe("Contact Form Validation & Utilities", () => {
       });
       assert.strictEqual(result.success, false);
     });
+
+    it("rejects non-string types for fields", () => {
+      const result = contactSchema.safeParse({
+        name: 12345,
+        email: "valid@example.com",
+        message: true,
+      });
+      assert.strictEqual(result.success, false);
+    });
   });
 
   describe("sanitizeHeader", () => {
@@ -128,9 +141,17 @@ describe("Contact Form Validation & Utilities", () => {
       assert.strictEqual(sanitized.includes("\r"), false);
       assert.strictEqual(sanitized.includes("\n"), false);
     });
+
+    it("strips null bytes and control characters", () => {
+      const input = "Project\x00 Inquiry\x1f with \x08control chars";
+      const sanitized = sanitizeHeader(input);
+      assert.strictEqual(sanitized, "Project  Inquiry  with  control chars");
+      assert.strictEqual(sanitized.includes("\x00"), false);
+      assert.strictEqual(sanitized.includes("\x1f"), false);
+    });
   });
 
-  describe("escapeHtml", () => {
+  describe("escapeHtml & Injection Prevention", () => {
     it("escapes dangerous HTML characters", () => {
       const input = '<script>alert("xss")</script> & \'test\'';
       const escaped = escapeHtml(input);
@@ -138,6 +159,76 @@ describe("Contact Form Validation & Utilities", () => {
         escaped,
         "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt; &amp; &#039;test&#039;"
       );
+    });
+
+    it("regression test: exact malicious payload <script>alert(\"Hello\");</script> is escaped", () => {
+      const maliciousPayload = '<script>alert("Hello");</script>';
+      const escaped = escapeHtml(maliciousPayload);
+
+      assert.strictEqual(
+        escaped,
+        "&lt;script&gt;alert(&quot;Hello&quot;);&lt;/script&gt;"
+      );
+      assert.strictEqual(escaped.includes("<script>"), false);
+      assert.strictEqual(escaped.includes("</script>"), false);
+    });
+  });
+
+  describe("sanitizeErrorMessage (Credential Protection)", () => {
+    it("redacts explicit secrets and Resend API key patterns", () => {
+      const secret = "re_123456789_abcdefghijklmnopqrstuvwxyz";
+      const errorMsg = `Failed to authenticate using key: ${secret} at api.resend.com`;
+      const sanitized = sanitizeErrorMessage(new Error(errorMsg), secret);
+
+      assert.strictEqual(sanitized.includes(secret), false);
+      assert.strictEqual(sanitized.includes("[REDACTED]"), true);
+    });
+
+    it("redacts unknown re_ API keys automatically via regex", () => {
+      const raw = "Upstream server returned error for key re_live_9876543210abcdefghijklmnop";
+      const sanitized = sanitizeErrorMessage(raw);
+
+      assert.strictEqual(sanitized.includes("re_live_9876543210abcdefghijklmnop"), false);
+      assert.strictEqual(sanitized.includes("[REDACTED_API_KEY]"), true);
+    });
+  });
+
+  describe("extractClientIp (Trusted Edge Headers)", () => {
+    it("prioritizes x-vercel-ip on Vercel infrastructure", () => {
+      const headers = new Headers({
+        "x-vercel-ip": "203.0.113.195",
+        "x-forwarded-for": "198.51.100.1, 10.0.0.1",
+        "x-real-ip": "198.51.100.1",
+      });
+      assert.strictEqual(extractClientIp(headers), "203.0.113.195");
+    });
+
+    it("uses cf-connecting-ip if x-vercel-ip is absent", () => {
+      const headers = new Headers({
+        "cf-connecting-ip": "198.51.100.42",
+        "x-forwarded-for": "1.1.1.1",
+      });
+      assert.strictEqual(extractClientIp(headers), "198.51.100.42");
+    });
+
+    it("uses x-real-ip if edge headers are absent", () => {
+      const headers = new Headers({
+        "x-real-ip": "192.0.2.1",
+        "x-forwarded-for": "10.0.0.5",
+      });
+      assert.strictEqual(extractClientIp(headers), "192.0.2.1");
+    });
+
+    it("extracts first IP from x-forwarded-for when other headers missing", () => {
+      const headers = new Headers({
+        "x-forwarded-for": "192.0.2.55, 10.0.0.1",
+      });
+      assert.strictEqual(extractClientIp(headers), "192.0.2.55");
+    });
+
+    it("falls back to anonymous when headers are empty", () => {
+      const headers = new Headers({});
+      assert.strictEqual(extractClientIp(headers), "anonymous");
     });
   });
 
@@ -167,9 +258,38 @@ describe("Contact Form Validation & Utilities", () => {
       assert.strictEqual(formatted.subject, "Portfolio Contact from Grace Hopper");
       assert.strictEqual(formatted.text.includes("(None provided)"), true);
     });
+
+    it("renders malicious <script>alert(\"Hello\");</script> as text in HTML email", () => {
+      const formatted = formatContactEmail({
+        name: "<script>alert('name')</script>",
+        email: "attacker@example.com",
+        subject: "<script>alert('subject')</script>",
+        message: '<script>alert("Hello");</script>',
+      });
+
+      // HTML body must NOT have unescaped <script> tags
+      assert.strictEqual(formatted.html.includes("<script>"), false);
+      assert.strictEqual(formatted.html.includes("</script>"), false);
+
+      // Must contain escaped HTML entities
+      assert.strictEqual(
+        formatted.html.includes("&lt;script&gt;alert(&quot;Hello&quot;);&lt;/script&gt;"),
+        true
+      );
+      assert.strictEqual(
+        formatted.html.includes("&lt;script&gt;alert(&#039;name&#039;)&lt;/script&gt;"),
+        true
+      );
+
+      // Plaintext must preserve the text literally without execution
+      assert.strictEqual(
+        formatted.text.includes('<script>alert("Hello");</script>'),
+        true
+      );
+    });
   });
 
-  describe("Rate Limiter", () => {
+  describe("Rate Limiting", () => {
     beforeEach(() => {
       resetRateLimitStore();
     });
@@ -191,6 +311,16 @@ describe("Contact Form Validation & Utilities", () => {
       }
       assert.strictEqual(isRateLimited(ip1), true);
       assert.strictEqual(isRateLimited(ip2), false);
+    });
+
+    it("checkRateLimit falls back to in-memory limiter when Upstash is unconfigured", async () => {
+      const testIp = "172.16.0.1";
+      for (let i = 0; i < 5; i++) {
+        const blocked = await checkRateLimit(testIp);
+        assert.strictEqual(blocked, false);
+      }
+      const blocked = await checkRateLimit(testIp);
+      assert.strictEqual(blocked, true);
     });
   });
 });
@@ -239,6 +369,26 @@ describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
     assert.strictEqual(Boolean(result.data.fieldErrors?.name), true);
     assert.strictEqual(Boolean(result.data.fieldErrors?.email), true);
     assert.strictEqual(Boolean(result.data.fieldErrors?.message), true);
+  });
+
+  it("returns 400 when body is not a valid object", async () => {
+    const resultString = await processContactSubmission("plain-string-body", {
+      apiKey: "re_mock_key",
+      toEmail: "owner@example.com",
+    });
+    assert.strictEqual(resultString.status, 400);
+
+    const resultNull = await processContactSubmission(null, {
+      apiKey: "re_mock_key",
+      toEmail: "owner@example.com",
+    });
+    assert.strictEqual(resultNull.status, 400);
+
+    const resultArray = await processContactSubmission(["unexpected", "array"], {
+      apiKey: "re_mock_key",
+      toEmail: "owner@example.com",
+    });
+    assert.strictEqual(resultArray.status, 400);
   });
 
   it("silently accepts honeypot submissions with 200 without sending email", async () => {
@@ -330,12 +480,55 @@ describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
       html: string;
     };
     assert.ok(sent);
+    // Crucial security assertions:
     assert.strictEqual(sent.from, "Portfolio Contact <contact@abdulrahmon.tech>");
     assert.strictEqual(sent.to, "owner@example.com");
     assert.strictEqual(sent.replyTo, "marie@sorbonne.fr");
+    assert.notStrictEqual(sent.from, "marie@sorbonne.fr", "Visitor email must NEVER be used as the from address");
     assert.strictEqual(sent.subject, "Portfolio Contact: Radiation Research");
     assert.strictEqual(sent.text.includes("Marie Curie"), true);
     assert.strictEqual(sent.html.includes("Marie Curie"), true);
+  });
+
+  it("handles the malicious payload <script>alert(\"Hello\");</script> in submission without script execution", async () => {
+    let capturedPayload: unknown = null;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async (payload) => {
+          capturedPayload = payload;
+          return { data: { id: "msg_safe_id" }, error: null };
+        },
+      },
+    };
+
+    const result = await processContactSubmission(
+      {
+        name: "Attacker",
+        email: "attacker@security.org",
+        subject: "Penetration Test",
+        message: '<script>alert("Hello");</script>',
+      },
+      {
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        resendClient: mockResend,
+      }
+    );
+
+    assert.strictEqual(result.status, 200);
+    assert.strictEqual(result.data.success, true);
+
+    const sent = capturedPayload as { html: string; text: string };
+    assert.strictEqual(sent.html.includes("<script>"), false);
+    assert.strictEqual(sent.html.includes("</script>"), false);
+    assert.strictEqual(
+      sent.html.includes("&lt;script&gt;alert(&quot;Hello&quot;);&lt;/script&gt;"),
+      true
+    );
+    assert.strictEqual(
+      sent.text.includes('<script>alert("Hello");</script>'),
+      true
+    );
   });
 
   it("returns 502 when Resend reports an error without leaking credentials", async () => {
@@ -344,7 +537,7 @@ describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
         send: async () => {
           return {
             data: null,
-            error: new Error("Resend domain unverified: test error"),
+            error: new Error("Resend domain unverified: test error with key re_test_secret_key_12345"),
           };
         },
       },
@@ -373,6 +566,11 @@ describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
       result.data.error?.includes("test error"),
       false,
       "Internal provider details must not leak to visitor"
+    );
+    assert.strictEqual(
+      result.data.error?.includes("re_test_secret_key_12345"),
+      false,
+      "Provider credentials must never leak to visitor"
     );
   });
 

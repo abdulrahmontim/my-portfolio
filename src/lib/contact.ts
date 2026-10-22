@@ -30,14 +30,16 @@ export const contactSchema = z.object({
 export type ContactInput = z.infer<typeof contactSchema>;
 
 /**
- * Strips carriage returns and newlines to prevent email header injection attacks.
+ * Strips carriage returns, newlines, null bytes, and ASCII control characters
+ * to prevent email header injection and control character exploits.
  */
 export function sanitizeHeader(input: string): string {
-  return input.replace(/[\r\n]+/g, " ").trim();
+  return input.replace(/[\r\n\x00-\x1f\x7f]+/g, " ").trim();
 }
 
 /**
  * Escapes HTML characters for safe rendering in HTML email bodies.
+ * Prevents HTML/XSS injection attacks (e.g. <script>alert("Hello");</script>).
  */
 export function escapeHtml(input: string): string {
   return input
@@ -48,6 +50,56 @@ export function escapeHtml(input: string): string {
     .replace(/'/g, "&#039;");
 }
 
+/**
+ * Sanitizes error messages for logging and prevents credential leakage
+ * (e.g. Redacting RESEND_API_KEY if present in error message or stack trace).
+ */
+export function sanitizeErrorMessage(error: unknown, secretToRedact?: string): string {
+  let message = "";
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (typeof error === "string") {
+    message = error;
+  } else {
+    try {
+      message = JSON.stringify(error);
+    } catch {
+      message = String(error);
+    }
+  }
+
+  if (secretToRedact && secretToRedact.length > 5) {
+    message = message.replaceAll(secretToRedact, "[REDACTED]");
+  }
+
+  // Redact any string resembling a Resend API key (re_...)
+  return message.replace(/re_[0-9a-zA-Z_]{10,}/g, "[REDACTED_API_KEY]");
+}
+
+/**
+ * Safely extracts client IP address, prioritizing trusted edge infrastructure headers.
+ */
+export function extractClientIp(headers: Headers): string {
+  // 1. Edge-injected headers (trusted on Vercel and Cloudflare)
+  const vercelIp = headers.get("x-vercel-ip");
+  if (vercelIp && vercelIp.trim()) return vercelIp.trim();
+
+  const cfIp = headers.get("cf-connecting-ip");
+  if (cfIp && cfIp.trim()) return cfIp.trim();
+
+  const realIp = headers.get("x-real-ip");
+  if (realIp && realIp.trim()) return realIp.trim();
+
+  // 2. Fallback to X-Forwarded-For: take first valid IP address
+  const forwardedFor = headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const firstIp = forwardedFor.split(",")[0]?.trim();
+    if (firstIp) return firstIp;
+  }
+
+  return "anonymous";
+}
+
 export interface FormattedEmail {
   subject: string;
   text: string;
@@ -56,6 +108,7 @@ export interface FormattedEmail {
 
 /**
  * Formats contact form data into structured plain text and HTML email representations.
+ * All user inputs are safely escaped and sanitized.
  */
 export function formatContactEmail(data: {
   name: string;
@@ -133,17 +186,21 @@ export function formatContactEmail(data: {
 }
 
 // In-memory sliding window rate limiter
-// Protects against rapid spam bursts; resets gracefully across serverless warm instances
+// Window: 10 minutes (600,000 ms), Max requests: 5
+export const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+export const MAX_REQUESTS_PER_WINDOW = 5;
 const ipRequests = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 5;
 
-export function isRateLimited(ip: string): boolean {
+export function isRateLimited(
+  ip: string,
+  windowMs: number = RATE_LIMIT_WINDOW_MS,
+  maxRequests: number = MAX_REQUESTS_PER_WINDOW
+): boolean {
   const now = Date.now();
   const timestamps = ipRequests.get(ip) || [];
-  const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  const recentTimestamps = timestamps.filter((t) => now - t < windowMs);
 
-  if (recentTimestamps.length >= MAX_REQUESTS_PER_WINDOW) {
+  if (recentTimestamps.length >= maxRequests) {
     return true;
   }
 
@@ -153,7 +210,7 @@ export function isRateLimited(ip: string): boolean {
   // Periodic cleanup if map grows large
   if (ipRequests.size > 500) {
     for (const [key, times] of ipRequests.entries()) {
-      if (times.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) {
+      if (times.every((t) => now - t >= windowMs)) {
         ipRequests.delete(key);
       }
     }
@@ -164,6 +221,60 @@ export function isRateLimited(ip: string): boolean {
 
 export function resetRateLimitStore(): void {
   ipRequests.clear();
+}
+
+export interface RateLimitOptions {
+  windowMs?: number;
+  maxRequests?: number;
+  upstashUrl?: string;
+  upstashToken?: string;
+}
+
+/**
+ * Checks rate limit for a client IP.
+ * If Upstash Redis REST credentials are provided (UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN),
+ * uses an atomic Redis pipeline for distributed persistence across serverless lambdas.
+ * Otherwise, falls back to the local in-memory sliding window limiter.
+ */
+export async function checkRateLimit(
+  ip: string,
+  options: RateLimitOptions = {}
+): Promise<boolean> {
+  const windowMs = options.windowMs ?? RATE_LIMIT_WINDOW_MS;
+  const maxRequests = options.maxRequests ?? MAX_REQUESTS_PER_WINDOW;
+  const upstashUrl = options.upstashUrl ?? process.env.UPSTASH_REDIS_REST_URL;
+  const upstashToken = options.upstashToken ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (upstashUrl && upstashToken) {
+    try {
+      const windowSeconds = Math.ceil(windowMs / 1000);
+      const key = `ratelimit:contact:${ip}`;
+      const response = await fetch(`${upstashUrl}/pipeline`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${upstashToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          ["INCR", key],
+          ["EXPIRE", key, windowSeconds, "NX"],
+        ]),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as Array<{ result: number }>;
+        const count = data?.[0]?.result;
+        if (typeof count === "number") {
+          return count > maxRequests;
+        }
+      }
+    } catch (err) {
+      // If Upstash Redis is unreachable, fail open to in-memory fallback without crashing
+      console.warn("Upstash Redis rate limit check failed, falling back to memory:", sanitizeErrorMessage(err));
+    }
+  }
+
+  return isRateLimited(ip, windowMs, maxRequests);
 }
 
 export interface ContactServiceResult {
@@ -201,6 +312,7 @@ export interface ContactServiceOptions {
   clientIp?: string;
   contentLength?: number;
   resendClient?: ResendLikeClient;
+  rateLimitCheck?: (ip: string) => Promise<boolean> | boolean;
 }
 
 export async function processContactSubmission(
@@ -220,12 +332,14 @@ export async function processContactSubmission(
 
   // 2. Client IP rate limiting
   const ip = options.clientIp || "anonymous";
-  if (isRateLimited(ip)) {
+  const rateLimitCheckFn = options.rateLimitCheck ?? checkRateLimit;
+  const isBlocked = await rateLimitCheckFn(ip);
+  if (isBlocked) {
     return {
       status: 429,
       data: {
         success: false,
-        error: "Too many requests. Please wait a minute before sending another message.",
+        error: "Too many requests. Please wait a few minutes before sending another message.",
       },
     };
   }
@@ -300,7 +414,10 @@ export async function processContactSubmission(
     });
 
     if (resendError) {
-      console.error("Resend API error:", resendError);
+      console.error(
+        "Resend API error:",
+        sanitizeErrorMessage(resendError, apiKey)
+      );
       return {
         status: 502,
         data: {
@@ -319,7 +436,10 @@ export async function processContactSubmission(
       },
     };
   } catch (error) {
-    console.error("Unhandled Resend exception:", error);
+    console.error(
+      "Unhandled Resend exception:",
+      sanitizeErrorMessage(error, apiKey)
+    );
     return {
       status: 500,
       data: {

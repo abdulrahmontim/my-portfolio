@@ -70,7 +70,29 @@ RESEND_FROM_EMAIL=Portfolio Contact <onboarding@resend.dev>
 # RESEND_FROM_EMAIL=Contact Form <contact@abdulrahmon.tech>
 ```
 
-### 4. Deploying to Vercel
+### 4. Optional: Distributed Rate Limiting (Upstash Redis)
+
+For production deployments on serverless platforms (e.g. Vercel), instances scale across multiple regions. By default, the contact form uses an in-memory sliding window rate limiter (5 requests / 10 minutes). To enforce persistent rate limiting across all serverless lambdas:
+
+1. Create a free database at [console.upstash.com](https://console.upstash.com).
+2. Copy the REST URL and REST Token.
+3. Add to `.env.local` and Vercel environment variables:
+   ```env
+   UPSTASH_REDIS_REST_URL=https://your-upstash-instance.upstash.io
+   UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
+   ```
+4. If omitted or unreachable, the system automatically and safely falls back to the local in-memory sliding window limiter.
+
+### 5. Security & Anti-Abuse Defenses
+
+- **Injection Prevention**: All user inputs (name, subject, message) are strictly HTML-escaped using entity encoding to neutralize XSS and script injection attacks (e.g. `<script>alert("Hello");</script>`).
+- **Header Injection Defense**: Subject and name fields are sanitized to remove carriage returns (`\r`), newlines (`\n`), null bytes (`\0`), and ASCII control characters.
+- **Honeypot Protection**: An off-screen, inaccessible honeypot field (`_hp`) silently traps automated bots with a `200 OK` response without invoking Resend or consuming email quotas.
+- **Payload Limits**: Requests exceeding 64KB are rejected immediately with `413 Payload Too Large`.
+- **Credential Protection**: The Resend API key is never exposed to client-side bundles, frontend responses, or server logs.
+- **Safe Sender & Routing**: Emails are strictly sent `from` the verified domain or sandbox sender with the visitor's address set exclusively as `replyTo`.
+
+### 6. Deploying to Vercel
 
 When deploying to Vercel:
 1. Go to your project settings in the [Vercel Dashboard](https://vercel.com).
@@ -79,4 +101,6 @@ When deploying to Vercel:
    - `RESEND_API_KEY` (Secret)
    - `CONTACT_EMAIL`
    - `RESEND_FROM_EMAIL`
+   - `UPSTASH_REDIS_REST_URL` (Optional)
+   - `UPSTASH_REDIS_REST_TOKEN` (Optional)
 4. Redeploy or trigger a new deployment for changes to take effect.

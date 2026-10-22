@@ -168,7 +168,19 @@ export default function ContactForm() {
       )}
 
       {/* Honeypot field for anti-spam bot trap */}
-      <div className="hidden" aria-hidden="true" style={{ display: "none" }}>
+      <div
+        className="hidden"
+        aria-hidden="true"
+        style={{
+          display: "none",
+          position: "absolute",
+          left: "-9999px",
+          width: "1px",
+          height: "1px",
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+      >
         <label htmlFor={hpId}>Do not fill this field</label>
         <input
           id={hpId}
