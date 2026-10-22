@@ -72,8 +72,12 @@ RESEND_FROM_EMAIL=Portfolio Contact <onboarding@resend.dev>
 
 ### 4. Optional: Distributed Rate Limiting (Upstash Redis)
 
-For production deployments on serverless platforms (e.g. Vercel), instances scale across multiple regions. By default, the contact form uses an in-memory sliding window rate limiter (5 requests / 10 minutes). To enforce persistent rate limiting across all serverless lambdas:
+For production deployments on serverless platforms (e.g. Vercel), instances scale across multiple regions. By default, the contact form uses an in-memory multi-window rate limiter enforcing:
+- Maximum 5 requests per IP per 10-minute window
+- Maximum 20 requests per IP per 24-hour day
+- Standard HTTP `429 Too Many Requests` status with `Retry-After` response header
 
+To enforce persistent, atomic rate limiting across all serverless lambdas:
 1. Create a free database at [console.upstash.com](https://console.upstash.com).
 2. Copy the REST URL and REST Token.
 3. Add to `.env.local` and Vercel environment variables:
@@ -81,18 +85,34 @@ For production deployments on serverless platforms (e.g. Vercel), instances scal
    UPSTASH_REDIS_REST_URL=https://your-upstash-instance.upstash.io
    UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
    ```
-4. If omitted or unreachable, the system automatically and safely falls back to the local in-memory sliding window limiter.
+4. If omitted or unreachable, the system automatically and safely falls back to the in-memory multi-window limiter.
 
-### 5. Security & Anti-Abuse Defenses
+### 5. Optional: Cloudflare Turnstile (Bot Protection)
 
+Cloudflare Turnstile provides privacy-friendly CAPTCHA protection without user friction. If configured:
+1. Create a Turnstile widget in the [Cloudflare Dashboard](https://dash.cloudflare.com/?to=/:account/turnstile).
+2. Add your domain (`abdulrahmon.tech` and `localhost` for testing).
+3. Add environment variables:
+   ```env
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAA_your_site_key
+   TURNSTILE_SECRET_KEY=0x4AAAAAA_your_secret_key
+   ```
+4. When configured, Turnstile tokens are strictly verified server-side with Cloudflare's Siteverify API (`https://challenges.cloudflare.com/turnstile/v0/siteverify`).
+5. *Note*: If omitted, Turnstile is bypassed cleanly without breaking form submissions or local testing.
+
+### 6. Security & Anti-Abuse Defenses
+
+- **Multi-Window Rate Limiting**: Dual-window rate limits (5 per 10 min, 20 per day) with dynamic `Retry-After` headers.
+- **Honeypot Protection**: An off-screen, inaccessible honeypot field (`_hp`) silently traps automated bots with a `200 OK` response without invoking Resend or consuming email quotas.
+- **Idempotency Deduplication**: In-memory hash cache prevents duplicate email sends within 2 minutes if the user double-clicks or experiences connection retries.
+- **Cross-Origin Validation**: Protects against unauthorized cross-origin POST requests from malicious external websites.
 - **Injection Prevention**: All user inputs (name, subject, message) are strictly HTML-escaped using entity encoding to neutralize XSS and script injection attacks (e.g. `<script>alert("Hello");</script>`).
 - **Header Injection Defense**: Subject and name fields are sanitized to remove carriage returns (`\r`), newlines (`\n`), null bytes (`\0`), and ASCII control characters.
-- **Honeypot Protection**: An off-screen, inaccessible honeypot field (`_hp`) silently traps automated bots with a `200 OK` response without invoking Resend or consuming email quotas.
 - **Payload Limits**: Requests exceeding 64KB are rejected immediately with `413 Payload Too Large`.
-- **Credential Protection**: The Resend API key is never exposed to client-side bundles, frontend responses, or server logs.
+- **Credential Protection**: The Resend API key and Turnstile secret key are never exposed to client-side bundles, frontend responses, or server logs.
 - **Safe Sender & Routing**: Emails are strictly sent `from` the verified domain or sandbox sender with the visitor's address set exclusively as `replyTo`.
 
-### 6. Deploying to Vercel
+### 7. Deploying to Vercel
 
 When deploying to Vercel:
 1. Go to your project settings in the [Vercel Dashboard](https://vercel.com).
@@ -103,4 +123,6 @@ When deploying to Vercel:
    - `RESEND_FROM_EMAIL`
    - `UPSTASH_REDIS_REST_URL` (Optional)
    - `UPSTASH_REDIS_REST_TOKEN` (Optional)
+   - `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (Optional)
+   - `TURNSTILE_SECRET_KEY` (Optional)
 4. Redeploy or trigger a new deployment for changes to take effect.

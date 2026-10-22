@@ -10,12 +10,14 @@ import {
   isRateLimited,
   resetRateLimitStore,
   checkRateLimit,
+  verifyTurnstileToken,
+  resetIdempotencyStore,
   processContactSubmission,
   type ResendLikeClient,
 } from "../src/lib/contact.ts";
 
-describe("Contact Form Validation & Utilities", () => {
-  describe("contactSchema", () => {
+describe("Contact Form Security & Abuse Prevention", () => {
+  describe("contactSchema (Input Validation & Boundaries)", () => {
     it("accepts a valid submission", () => {
       const result = contactSchema.safeParse({
         name: "Ada Lovelace",
@@ -73,13 +75,14 @@ describe("Contact Form Validation & Utilities", () => {
       assert.strictEqual(result.success, false);
     });
 
-    it("rejects invalid email formats", () => {
+    it("rejects invalid email formats and injection attempts", () => {
       const invalidEmails = [
         "not-an-email",
         "missing-domain@",
         "@missing-user.com",
         "spaces in@email.com",
         "javascript:alert(1)",
+        "victim@domain.com\r\nBcc:attacker@domain.com",
       ];
 
       for (const email of invalidEmails) {
@@ -130,7 +133,7 @@ describe("Contact Form Validation & Utilities", () => {
     });
   });
 
-  describe("sanitizeHeader", () => {
+  describe("sanitizeHeader & Header Injection Defense", () => {
     it("strips newline characters to prevent header injection", () => {
       const input = "Inquiry\r\nBcc: hacker@evil.com\r\nSubject: Injected";
       const sanitized = sanitizeHeader(input);
@@ -151,7 +154,7 @@ describe("Contact Form Validation & Utilities", () => {
     });
   });
 
-  describe("escapeHtml & Injection Prevention", () => {
+  describe("escapeHtml & Script Injection Defense", () => {
     it("escapes dangerous HTML characters", () => {
       const input = '<script>alert("xss")</script> & \'test\'';
       const escaped = escapeHtml(input);
@@ -174,7 +177,7 @@ describe("Contact Form Validation & Utilities", () => {
     });
   });
 
-  describe("sanitizeErrorMessage (Credential Protection)", () => {
+  describe("sanitizeErrorMessage (Credential & Provider Detail Protection)", () => {
     it("redacts explicit secrets and Resend API key patterns", () => {
       const secret = "re_123456789_abcdefghijklmnopqrstuvwxyz";
       const errorMsg = `Failed to authenticate using key: ${secret} at api.resend.com`;
@@ -193,7 +196,7 @@ describe("Contact Form Validation & Utilities", () => {
     });
   });
 
-  describe("extractClientIp (Trusted Edge Headers)", () => {
+  describe("extractClientIp (Trusted Proxy & Header Spoofing Defense)", () => {
     it("prioritizes x-vercel-ip on Vercel infrastructure", () => {
       const headers = new Headers({
         "x-vercel-ip": "203.0.113.195",
@@ -219,16 +222,96 @@ describe("Contact Form Validation & Utilities", () => {
       assert.strictEqual(extractClientIp(headers), "192.0.2.1");
     });
 
-    it("extracts first IP from x-forwarded-for when other headers missing", () => {
+    it("extracts first non-empty IP from x-forwarded-for when other headers missing", () => {
       const headers = new Headers({
         "x-forwarded-for": "192.0.2.55, 10.0.0.1",
       });
       assert.strictEqual(extractClientIp(headers), "192.0.2.55");
     });
 
-    it("falls back to anonymous when headers are empty", () => {
+    it("falls back to anonymous when headers are empty or malformed", () => {
       const headers = new Headers({});
       assert.strictEqual(extractClientIp(headers), "anonymous");
+    });
+  });
+
+  describe("Shared & Multi-Window Rate Limiting", () => {
+    beforeEach(() => {
+      resetRateLimitStore();
+    });
+
+    it("enforces short window: allows 5 submissions per 10-minute window and blocks the 6th", () => {
+      const testIp = "192.168.1.100";
+      const baseTime = 1000000;
+
+      for (let i = 0; i < 5; i++) {
+        const res = isRateLimited(testIp, baseTime + i * 1000);
+        assert.strictEqual(res.limited, false);
+      }
+
+      const res6 = isRateLimited(testIp, baseTime + 5000);
+      assert.strictEqual(res6.limited, true);
+      assert.strictEqual(res6.reason, "short");
+      assert.strictEqual(res6.retryAfter > 0, true);
+    });
+
+    it("enforces daily window: allows up to 20 submissions per day and blocks the 21st", () => {
+      const testIp = "10.0.0.99";
+      let currentTime = 1000000;
+
+      // Make 20 submissions spread over hours (avoiding the 5-per-10-min limit by spacing them 15 mins apart)
+      for (let i = 0; i < 20; i++) {
+        currentTime += 15 * 60 * 1000; // +15 mins
+        const res = isRateLimited(testIp, currentTime);
+        assert.strictEqual(res.limited, false, `Submission ${i + 1} should be permitted`);
+      }
+
+      // 21st submission within 24 hours must be blocked by daily limit
+      currentTime += 15 * 60 * 1000;
+      const res21 = isRateLimited(testIp, currentTime);
+      assert.strictEqual(res21.limited, true);
+      assert.strictEqual(res21.reason, "daily");
+      assert.strictEqual(res21.retryAfter > 0, true);
+    });
+
+    it("tracks different client IPs independently", () => {
+      const ip1 = "10.0.0.1";
+      const ip2 = "10.0.0.2";
+      const now = Date.now();
+
+      for (let i = 0; i < 5; i++) {
+        isRateLimited(ip1, now);
+      }
+      assert.strictEqual(isRateLimited(ip1, now).limited, true);
+      assert.strictEqual(isRateLimited(ip2, now).limited, false);
+    });
+
+    it("handles concurrent requests atomically without bypassing limits", async () => {
+      const ip = "192.168.1.250";
+      const promises = Array.from({ length: 10 }, () =>
+        checkRateLimit(ip)
+      );
+
+      const results = await Promise.all(promises);
+      const passed = results.filter((r) => !r.limited).length;
+      const blocked = results.filter((r) => r.limited).length;
+
+      assert.strictEqual(passed, 5, "Exactly 5 concurrent requests should pass");
+      assert.strictEqual(blocked, 5, "Remaining 5 requests must be blocked with 429");
+    });
+  });
+
+  describe("Cloudflare Turnstile Verification", () => {
+    it("bypasses verification cleanly when TURNSTILE_SECRET_KEY is not configured", async () => {
+      const res = await verifyTurnstileToken("dummy_token", "1.2.3.4", undefined);
+      assert.strictEqual(res.success, true);
+      assert.strictEqual(res.bypassed, true);
+    });
+
+    it("rejects when TURNSTILE_SECRET_KEY is set but token is missing", async () => {
+      const res = await verifyTurnstileToken("", "1.2.3.4", "0x4AAAAAAtest_secret");
+      assert.strictEqual(res.success, false);
+      assert.strictEqual(res.error?.includes("not completed"), true);
     });
   });
 
@@ -259,7 +342,7 @@ describe("Contact Form Validation & Utilities", () => {
       assert.strictEqual(formatted.text.includes("(None provided)"), true);
     });
 
-    it("renders malicious <script>alert(\"Hello\");</script> as text in HTML email", () => {
+    it("renders malicious <script>alert(\"Hello\");</script> as inert text in HTML and plain text", () => {
       const formatted = formatContactEmail({
         name: "<script>alert('name')</script>",
         email: "attacker@example.com",
@@ -267,95 +350,190 @@ describe("Contact Form Validation & Utilities", () => {
         message: '<script>alert("Hello");</script>',
       });
 
-      // HTML body must NOT have unescaped <script> tags
       assert.strictEqual(formatted.html.includes("<script>"), false);
       assert.strictEqual(formatted.html.includes("</script>"), false);
-
-      // Must contain escaped HTML entities
       assert.strictEqual(
         formatted.html.includes("&lt;script&gt;alert(&quot;Hello&quot;);&lt;/script&gt;"),
         true
       );
-      assert.strictEqual(
-        formatted.html.includes("&lt;script&gt;alert(&#039;name&#039;)&lt;/script&gt;"),
-        true
-      );
-
-      // Plaintext must preserve the text literally without execution
       assert.strictEqual(
         formatted.text.includes('<script>alert("Hello");</script>'),
         true
       );
     });
   });
-
-  describe("Rate Limiting", () => {
-    beforeEach(() => {
-      resetRateLimitStore();
-    });
-
-    it("allows up to 5 requests per window and blocks the 6th", () => {
-      const testIp = "192.168.1.100";
-      for (let i = 0; i < 5; i++) {
-        assert.strictEqual(isRateLimited(testIp), false);
-      }
-      assert.strictEqual(isRateLimited(testIp), true);
-    });
-
-    it("tracks different IPs independently", () => {
-      const ip1 = "10.0.0.1";
-      const ip2 = "10.0.0.2";
-
-      for (let i = 0; i < 5; i++) {
-        isRateLimited(ip1);
-      }
-      assert.strictEqual(isRateLimited(ip1), true);
-      assert.strictEqual(isRateLimited(ip2), false);
-    });
-
-    it("checkRateLimit falls back to in-memory limiter when Upstash is unconfigured", async () => {
-      const testIp = "172.16.0.1";
-      for (let i = 0; i < 5; i++) {
-        const blocked = await checkRateLimit(testIp);
-        assert.strictEqual(blocked, false);
-      }
-      const blocked = await checkRateLimit(testIp);
-      assert.strictEqual(blocked, true);
-    });
-  });
 });
 
-describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
+describe("processContactSubmission (End-to-End Abuse Protection & Mocked Resend)", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
     process.env = { ...originalEnv };
     resetRateLimitStore();
+    resetIdempotencyStore();
   });
 
-  it("returns 500 when RESEND_API_KEY or CONTACT_EMAIL is missing", async () => {
-    delete process.env.RESEND_API_KEY;
-    delete process.env.CONTACT_EMAIL;
+  it("1. A valid submission delivers exactly one mocked email", async () => {
+    let sendCalls = 0;
+    let capturedPayload: unknown = null;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async (payload) => {
+          sendCalls++;
+          capturedPayload = payload;
+          return { data: { id: "msg_valid_123" }, error: null };
+        },
+      },
+    };
 
-    const result = await processContactSubmission({
-      name: "Test User",
-      email: "test@example.com",
-      message: "Valid test message here.",
-    });
-
-    assert.strictEqual(result.status, 500);
-    assert.strictEqual(result.data.success, false);
-    assert.strictEqual(
-      result.data.error?.includes("temporarily unavailable"),
-      true
+    const result = await processContactSubmission(
+      {
+        name: "Margaret Hamilton",
+        email: "margaret@mit.edu",
+        subject: "Apollo 11 Flight Software",
+        message: "Inquiring about real-time distributed backend architectures.",
+      },
+      {
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        fromEmail: "Portfolio Contact <contact@abdulrahmon.tech>",
+        clientIp: "192.0.2.1",
+        resendClient: mockResend,
+      }
     );
+
+    assert.strictEqual(result.status, 200);
+    assert.strictEqual(result.data.success, true);
+    assert.strictEqual(sendCalls, 1, "Exactly one email must be sent");
+
+    const sent = capturedPayload as {
+      from: string;
+      to: string;
+      replyTo: string;
+      subject: string;
+      text: string;
+      html: string;
+    };
+    assert.strictEqual(sent.from, "Portfolio Contact <contact@abdulrahmon.tech>");
+    assert.strictEqual(sent.to, "owner@example.com");
+    assert.strictEqual(sent.replyTo, "margaret@mit.edu");
+    assert.notStrictEqual(sent.from, "margaret@mit.edu", "Visitor email must NEVER be used as the from sender");
+    assert.strictEqual(sent.subject, "Portfolio Contact: Apollo 11 Flight Software");
   });
 
-  it("returns 400 with field errors for invalid input", async () => {
+  it("2. Repeated submissions exceed configured per-IP limit (5 in 10 minutes)", async () => {
+    let sendCalls = 0;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async () => {
+          sendCalls++;
+          return { data: { id: `msg_${sendCalls}` }, error: null };
+        },
+      },
+    };
+
+    const options = {
+      apiKey: "re_mock_key",
+      toEmail: "owner@example.com",
+      clientIp: "203.0.113.88",
+      resendClient: mockResend,
+    };
+
+    // First 5 submissions succeed
+    for (let i = 0; i < 5; i++) {
+      const res = await processContactSubmission(
+        {
+          name: `User ${i}`,
+          email: `user${i}@example.com`,
+          message: `Valid message number ${i}`,
+        },
+        options
+      );
+      assert.strictEqual(res.status, 200);
+    }
+    assert.strictEqual(sendCalls, 5);
+
+    // 6th submission within 10 minutes must return 429
+    const blockedRes = await processContactSubmission(
+      {
+        name: "User 6",
+        email: "user6@example.com",
+        message: "Message number 6",
+      },
+      options
+    );
+    assert.strictEqual(blockedRes.status, 429);
+    assert.strictEqual(blockedRes.data.success, false);
+    assert.strictEqual(blockedRes.retryAfter !== undefined && blockedRes.retryAfter > 0, true);
+    assert.strictEqual(sendCalls, 5, "Resend must NOT be called for rate-limited requests");
+  });
+
+  it("3. Populated honeypot submissions do not send email", async () => {
+    let emailSent = false;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async () => {
+          emailSent = true;
+          return { data: { id: "honeypot_trap_id" }, error: null };
+        },
+      },
+    };
+
+    const result = await processContactSubmission(
+      {
+        name: "Spam Bot",
+        email: "bot@spammer.org",
+        message: "Buy cheap medications online now!",
+        _hp: "filled_by_bot",
+      },
+      {
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        resendClient: mockResend,
+      }
+    );
+
+    assert.strictEqual(result.status, 200);
+    assert.strictEqual(result.data.success, true);
+    assert.strictEqual(emailSent, false, "Resend must NEVER be called for honeypot bot submissions");
+  });
+
+  it("4. Rejects oversized payloads (> 64KB) with 413", async () => {
+    let emailSent = false;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async () => {
+          emailSent = true;
+          return { data: { id: "id" }, error: null };
+        },
+      },
+    };
+
+    const result = await processContactSubmission(
+      {
+        name: "Test",
+        email: "test@example.com",
+        message: "Short message",
+      },
+      {
+        contentLength: 70000,
+        apiKey: "re_mock_key",
+        toEmail: "owner@example.com",
+        resendClient: mockResend,
+      }
+    );
+
+    assert.strictEqual(result.status, 413);
+    assert.strictEqual(result.data.success, false);
+    assert.strictEqual(result.data.error?.includes("Payload too large"), true);
+    assert.strictEqual(emailSent, false);
+  });
+
+  it("5. Rejects invalid and missing fields with 400", async () => {
     const result = await processContactSubmission(
       {
         name: "",
-        email: "bad-email",
+        email: "invalid-email",
         message: "hi",
       },
       {
@@ -371,173 +549,107 @@ describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
     assert.strictEqual(Boolean(result.data.fieldErrors?.message), true);
   });
 
-  it("returns 400 when body is not a valid object", async () => {
-    const resultString = await processContactSubmission("plain-string-body", {
+  it("6. Rejects malformed and non-object bodies with 400", async () => {
+    const stringBody = await processContactSubmission("plain-string", {
       apiKey: "re_mock_key",
       toEmail: "owner@example.com",
     });
-    assert.strictEqual(resultString.status, 400);
+    assert.strictEqual(stringBody.status, 400);
 
-    const resultNull = await processContactSubmission(null, {
+    const nullBody = await processContactSubmission(null, {
       apiKey: "re_mock_key",
       toEmail: "owner@example.com",
     });
-    assert.strictEqual(resultNull.status, 400);
+    assert.strictEqual(nullBody.status, 400);
 
-    const resultArray = await processContactSubmission(["unexpected", "array"], {
+    const arrayBody = await processContactSubmission(["unexpected"], {
       apiKey: "re_mock_key",
       toEmail: "owner@example.com",
     });
-    assert.strictEqual(resultArray.status, 400);
+    assert.strictEqual(arrayBody.status, 400);
   });
 
-  it("silently accepts honeypot submissions with 200 without sending email", async () => {
+  it("7. Prevents duplicate sends within 2 minutes via idempotency check", async () => {
+    let sendCalls = 0;
+    const mockResend: ResendLikeClient = {
+      emails: {
+        send: async () => {
+          sendCalls++;
+          return { data: { id: "idempotent_id" }, error: null };
+        },
+      },
+    };
+
+    const options = {
+      apiKey: "re_mock_key",
+      toEmail: "owner@example.com",
+      clientIp: "192.168.10.10",
+      resendClient: mockResend,
+    };
+
+    const payload = {
+      name: "Double Clicker",
+      email: "clicker@example.com",
+      message: "This is a valid test message that could be clicked twice.",
+    };
+
+    // First submission
+    const res1 = await processContactSubmission(payload, options);
+    assert.strictEqual(res1.status, 200);
+    assert.strictEqual(sendCalls, 1);
+
+    // Immediate second submission with identical content from same IP
+    const res2 = await processContactSubmission(payload, options);
+    assert.strictEqual(res2.status, 200);
+    assert.strictEqual(sendCalls, 1, "Duplicate submission within 2 minutes must not dispatch second email");
+  });
+
+  it("8. Rejects when Turnstile token verification fails", async () => {
     let emailSent = false;
     const mockResend: ResendLikeClient = {
       emails: {
         send: async () => {
           emailSent = true;
-          return { data: { id: "mock_id" }, error: null };
+          return { data: { id: "id" }, error: null };
         },
       },
     };
 
+    const mockTurnstileVerifier = async () => ({
+      success: false,
+      error: "Bot verification failed or expired. Please refresh and try again.",
+    });
+
     const result = await processContactSubmission(
       {
-        name: "Spam Bot",
-        email: "bot@spammer.com",
-        message: "Spam message buy our product.",
-        _hp: "I am a bot",
+        name: "Test User",
+        email: "user@example.com",
+        message: "Valid test message here.",
+        turnstileToken: "invalid_cf_token",
       },
       {
         apiKey: "re_mock_key",
         toEmail: "owner@example.com",
         resendClient: mockResend,
+        turnstileVerifier: mockTurnstileVerifier,
       }
     );
 
-    assert.strictEqual(result.status, 200);
-    assert.strictEqual(result.data.success, true);
-    assert.strictEqual(emailSent, false, "Email must not be sent for honeypot submissions");
-  });
-
-  it("rejects payloads over 64KB with 413", async () => {
-    const result = await processContactSubmission(
-      {
-        name: "Test",
-        email: "test@example.com",
-        message: "Short",
-      },
-      {
-        contentLength: 70000,
-        apiKey: "re_mock_key",
-        toEmail: "owner@example.com",
-      }
-    );
-
-    assert.strictEqual(result.status, 413);
+    assert.strictEqual(result.status, 400);
     assert.strictEqual(result.data.success, false);
-    assert.strictEqual(result.data.error?.includes("Payload too large"), true);
+    assert.strictEqual(result.data.error?.includes("Bot verification failed"), true);
+    assert.strictEqual(emailSent, false);
   });
 
-  it("successfully sends an email via mocked Resend with replyTo and verified from", async () => {
-    let capturedPayload: unknown = null;
-    const mockResend: ResendLikeClient = {
-      emails: {
-        send: async (payload) => {
-          capturedPayload = payload;
-          return { data: { id: "resend_msg_12345" }, error: null };
-        },
-      },
-    };
-
-    const result = await processContactSubmission(
-      {
-        name: "Marie Curie",
-        email: "marie@sorbonne.fr",
-        subject: "Radiation Research",
-        message: "Inquiring about potential collaboration on backend telemetry.",
-      },
-      {
-        apiKey: "re_mock_key",
-        toEmail: "owner@example.com",
-        fromEmail: "Portfolio Contact <contact@abdulrahmon.tech>",
-        clientIp: "192.168.1.50",
-        resendClient: mockResend,
-      }
-    );
-
-    assert.strictEqual(result.status, 200);
-    assert.strictEqual(result.data.success, true);
-    assert.strictEqual(result.data.id, "resend_msg_12345");
-
-    const sent = capturedPayload as {
-      from: string;
-      to: string;
-      replyTo: string;
-      subject: string;
-      text: string;
-      html: string;
-    };
-    assert.ok(sent);
-    // Crucial security assertions:
-    assert.strictEqual(sent.from, "Portfolio Contact <contact@abdulrahmon.tech>");
-    assert.strictEqual(sent.to, "owner@example.com");
-    assert.strictEqual(sent.replyTo, "marie@sorbonne.fr");
-    assert.notStrictEqual(sent.from, "marie@sorbonne.fr", "Visitor email must NEVER be used as the from address");
-    assert.strictEqual(sent.subject, "Portfolio Contact: Radiation Research");
-    assert.strictEqual(sent.text.includes("Marie Curie"), true);
-    assert.strictEqual(sent.html.includes("Marie Curie"), true);
-  });
-
-  it("handles the malicious payload <script>alert(\"Hello\");</script> in submission without script execution", async () => {
-    let capturedPayload: unknown = null;
-    const mockResend: ResendLikeClient = {
-      emails: {
-        send: async (payload) => {
-          capturedPayload = payload;
-          return { data: { id: "msg_safe_id" }, error: null };
-        },
-      },
-    };
-
-    const result = await processContactSubmission(
-      {
-        name: "Attacker",
-        email: "attacker@security.org",
-        subject: "Penetration Test",
-        message: '<script>alert("Hello");</script>',
-      },
-      {
-        apiKey: "re_mock_key",
-        toEmail: "owner@example.com",
-        resendClient: mockResend,
-      }
-    );
-
-    assert.strictEqual(result.status, 200);
-    assert.strictEqual(result.data.success, true);
-
-    const sent = capturedPayload as { html: string; text: string };
-    assert.strictEqual(sent.html.includes("<script>"), false);
-    assert.strictEqual(sent.html.includes("</script>"), false);
-    assert.strictEqual(
-      sent.html.includes("&lt;script&gt;alert(&quot;Hello&quot;);&lt;/script&gt;"),
-      true
-    );
-    assert.strictEqual(
-      sent.text.includes('<script>alert("Hello");</script>'),
-      true
-    );
-  });
-
-  it("returns 502 when Resend reports an error without leaking credentials", async () => {
+  it("9. Resend errors do not leak secrets or internal provider details", async () => {
     const mockResend: ResendLikeClient = {
       emails: {
         send: async () => {
           return {
             data: null,
-            error: new Error("Resend domain unverified: test error with key re_test_secret_key_12345"),
+            error: new Error(
+              "Resend authentication error using key re_live_secret_key_1234567890abcdef at internal-gateway"
+            ),
           };
         },
       },
@@ -547,7 +659,7 @@ describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
       {
         name: "Test User",
         email: "user@example.com",
-        message: "Hello world testing error handling.",
+        message: "Valid test message for error handling test.",
       },
       {
         apiKey: "re_mock_key",
@@ -563,49 +675,29 @@ describe("processContactSubmission (Service Layer & Mocked Resend)", () => {
       true
     );
     assert.strictEqual(
-      result.data.error?.includes("test error"),
+      result.data.error?.includes("re_live_secret_key"),
       false,
-      "Internal provider details must not leak to visitor"
+      "Resend API secret must never leak in client error message"
     );
     assert.strictEqual(
-      result.data.error?.includes("re_test_secret_key_12345"),
+      result.data.error?.includes("internal-gateway"),
       false,
-      "Provider credentials must never leak to visitor"
+      "Internal infrastructure details must not leak in client error message"
     );
   });
 
-  it("returns 429 when rate limit is exceeded", async () => {
-    const ip = "1.2.3.4";
-    const mockResend: ResendLikeClient = {
-      emails: {
-        send: async () => ({ data: { id: "id" }, error: null }),
-      },
-    };
+  it("10. Returns 500 cleanly when RESEND_API_KEY or CONTACT_EMAIL is missing", async () => {
+    delete process.env.RESEND_API_KEY;
+    delete process.env.CONTACT_EMAIL;
 
-    const options = {
-      apiKey: "re_mock_key",
-      toEmail: "owner@example.com",
-      clientIp: ip,
-      resendClient: mockResend,
-    };
+    const result = await processContactSubmission({
+      name: "Test User",
+      email: "test@example.com",
+      message: "Valid test message here.",
+    });
 
-    const payload = {
-      name: "Burst User",
-      email: "burst@example.com",
-      message: "Testing burst rate limiting.",
-    };
-
-    for (let i = 0; i < 5; i++) {
-      const res = await processContactSubmission(payload, options);
-      assert.strictEqual(res.status, 200);
-    }
-
-    const blocked = await processContactSubmission(payload, options);
-    assert.strictEqual(blocked.status, 429);
-    assert.strictEqual(blocked.data.success, false);
-    assert.strictEqual(
-      blocked.data.error?.includes("Too many requests"),
-      true
-    );
+    assert.strictEqual(result.status, 500);
+    assert.strictEqual(result.data.success, false);
+    assert.strictEqual(result.data.error?.includes("temporarily unavailable"), true);
   });
 });

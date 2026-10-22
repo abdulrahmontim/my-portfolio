@@ -25,6 +25,7 @@ export const contactSchema = z.object({
     .min(5, "Message must be at least 5 characters")
     .max(5000, "Message must be 5000 characters or less"),
   _hp: z.string().optional().default(""),
+  turnstileToken: z.string().optional().default(""),
 });
 
 export type ContactInput = z.infer<typeof contactSchema>;
@@ -52,7 +53,7 @@ export function escapeHtml(input: string): string {
 
 /**
  * Sanitizes error messages for logging and prevents credential leakage
- * (e.g. Redacting RESEND_API_KEY if present in error message or stack trace).
+ * (e.g. Redacting RESEND_API_KEY or TURNSTILE_SECRET_KEY if present in error message or stack trace).
  */
 export function sanitizeErrorMessage(error: unknown, secretToRedact?: string): string {
   let message = "";
@@ -78,6 +79,7 @@ export function sanitizeErrorMessage(error: unknown, secretToRedact?: string): s
 
 /**
  * Safely extracts client IP address, prioritizing trusted edge infrastructure headers.
+ * Does not trust arbitrary unverified client headers.
  */
 export function extractClientIp(headers: Headers): string {
   // 1. Edge-injected headers (trusted on Vercel and Cloudflare)
@@ -90,11 +92,11 @@ export function extractClientIp(headers: Headers): string {
   const realIp = headers.get("x-real-ip");
   if (realIp && realIp.trim()) return realIp.trim();
 
-  // 2. Fallback to X-Forwarded-For: take first valid IP address
+  // 2. Fallback to X-Forwarded-For: take first non-empty IP entry
   const forwardedFor = headers.get("x-forwarded-for");
   if (forwardedFor) {
-    const firstIp = forwardedFor.split(",")[0]?.trim();
-    if (firstIp) return firstIp;
+    const parts = forwardedFor.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[0];
   }
 
   return "anonymous";
@@ -185,70 +187,123 @@ export function formatContactEmail(data: {
   };
 }
 
-// In-memory sliding window rate limiter
-// Window: 10 minutes (600,000 ms), Max requests: 5
-export const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-export const MAX_REQUESTS_PER_WINDOW = 5;
-const ipRequests = new Map<string, number[]>();
+// ============================================================================
+// Shared & Multi-Window Server-Side Rate Limiter
+// Short window: 10 minutes (max 5 requests)
+// Daily window: 24 hours (max 20 requests)
+// ============================================================================
+export const RATE_LIMIT_SHORT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+export const RATE_LIMIT_SHORT_MAX = 5;
 
+export const RATE_LIMIT_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const RATE_LIMIT_DAILY_MAX = 20;
+
+export interface RateLimitResult {
+  limited: boolean;
+  retryAfter: number; // in seconds
+  reason?: "short" | "daily";
+}
+
+interface IpTimestamps {
+  shortTimestamps: number[];
+  dailyTimestamps: number[];
+}
+
+const memoryRateLimitMap = new Map<string, IpTimestamps>();
+
+/**
+ * In-memory multi-window rate limiter fallback.
+ */
 export function isRateLimited(
   ip: string,
-  windowMs: number = RATE_LIMIT_WINDOW_MS,
-  maxRequests: number = MAX_REQUESTS_PER_WINDOW
-): boolean {
-  const now = Date.now();
-  const timestamps = ipRequests.get(ip) || [];
-  const recentTimestamps = timestamps.filter((t) => now - t < windowMs);
+  now: number = Date.now(),
+  shortWindowMs: number = RATE_LIMIT_SHORT_WINDOW_MS,
+  shortMax: number = RATE_LIMIT_SHORT_MAX,
+  dailyWindowMs: number = RATE_LIMIT_DAILY_WINDOW_MS,
+  dailyMax: number = RATE_LIMIT_DAILY_MAX
+): RateLimitResult {
+  const record = memoryRateLimitMap.get(ip) || {
+    shortTimestamps: [],
+    dailyTimestamps: [],
+  };
 
-  if (recentTimestamps.length >= maxRequests) {
-    return true;
+  const recentShort = record.shortTimestamps.filter((t) => now - t < shortWindowMs);
+  const recentDaily = record.dailyTimestamps.filter((t) => now - t < dailyWindowMs);
+
+  // Check 10-minute short limit
+  if (recentShort.length >= shortMax) {
+    const oldest = recentShort[0];
+    const retryAfter = Math.max(1, Math.ceil((shortWindowMs - (now - oldest)) / 1000));
+    return { limited: true, retryAfter, reason: "short" };
   }
 
-  recentTimestamps.push(now);
-  ipRequests.set(ip, recentTimestamps);
+  // Check 24-hour daily limit
+  if (recentDaily.length >= dailyMax) {
+    const oldest = recentDaily[0];
+    const retryAfter = Math.max(1, Math.ceil((dailyWindowMs - (now - oldest)) / 1000));
+    return { limited: true, retryAfter, reason: "daily" };
+  }
 
-  // Periodic cleanup if map grows large
-  if (ipRequests.size > 500) {
-    for (const [key, times] of ipRequests.entries()) {
-      if (times.every((t) => now - t >= windowMs)) {
-        ipRequests.delete(key);
+  // Record attempt
+  recentShort.push(now);
+  recentDaily.push(now);
+  memoryRateLimitMap.set(ip, {
+    shortTimestamps: recentShort,
+    dailyTimestamps: recentDaily,
+  });
+
+  // Periodic cleanup if map grows
+  if (memoryRateLimitMap.size > 1000) {
+    for (const [key, val] of memoryRateLimitMap.entries()) {
+      if (val.dailyTimestamps.every((t) => now - t >= dailyWindowMs)) {
+        memoryRateLimitMap.delete(key);
       }
     }
   }
 
-  return false;
+  return { limited: false, retryAfter: 0 };
 }
 
 export function resetRateLimitStore(): void {
-  ipRequests.clear();
+  memoryRateLimitMap.clear();
 }
 
 export interface RateLimitOptions {
-  windowMs?: number;
-  maxRequests?: number;
+  shortWindowMs?: number;
+  shortMax?: number;
+  dailyWindowMs?: number;
+  dailyMax?: number;
   upstashUrl?: string;
   upstashToken?: string;
+  now?: number;
 }
 
 /**
- * Checks rate limit for a client IP.
+ * Checks rate limits for a client IP address.
  * If Upstash Redis REST credentials are provided (UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN),
  * uses an atomic Redis pipeline for distributed persistence across serverless lambdas.
- * Otherwise, falls back to the local in-memory sliding window limiter.
+ * Otherwise, falls back to the in-memory multi-window limiter.
  */
 export async function checkRateLimit(
   ip: string,
   options: RateLimitOptions = {}
-): Promise<boolean> {
-  const windowMs = options.windowMs ?? RATE_LIMIT_WINDOW_MS;
-  const maxRequests = options.maxRequests ?? MAX_REQUESTS_PER_WINDOW;
+): Promise<RateLimitResult> {
+  const shortWindowMs = options.shortWindowMs ?? RATE_LIMIT_SHORT_WINDOW_MS;
+  const shortMax = options.shortMax ?? RATE_LIMIT_SHORT_MAX;
+  const dailyWindowMs = options.dailyWindowMs ?? RATE_LIMIT_DAILY_WINDOW_MS;
+  const dailyMax = options.dailyMax ?? RATE_LIMIT_DAILY_MAX;
+  const now = options.now ?? Date.now();
+
   const upstashUrl = options.upstashUrl ?? process.env.UPSTASH_REDIS_REST_URL;
   const upstashToken = options.upstashToken ?? process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (upstashUrl && upstashToken) {
     try {
-      const windowSeconds = Math.ceil(windowMs / 1000);
-      const key = `ratelimit:contact:${ip}`;
+      const shortKey = `ratelimit:contact:short:${ip}`;
+      const dailyKey = `ratelimit:contact:daily:${ip}`;
+      const shortSeconds = Math.ceil(shortWindowMs / 1000);
+      const dailySeconds = Math.ceil(dailyWindowMs / 1000);
+
       const response = await fetch(`${upstashUrl}/pipeline`, {
         method: "POST",
         headers: {
@@ -256,29 +311,151 @@ export async function checkRateLimit(
           "Content-Type": "application/json",
         },
         body: JSON.stringify([
-          ["INCR", key],
-          ["EXPIRE", key, windowSeconds, "NX"],
+          ["INCR", shortKey],
+          ["EXPIRE", shortKey, shortSeconds, "NX"],
+          ["TTL", shortKey],
+          ["INCR", dailyKey],
+          ["EXPIRE", dailyKey, dailySeconds, "NX"],
+          ["TTL", dailyKey],
         ]),
       });
 
       if (response.ok) {
-        const data = (await response.json()) as Array<{ result: number }>;
-        const count = data?.[0]?.result;
-        if (typeof count === "number") {
-          return count > maxRequests;
+        const results = (await response.json()) as Array<{ result: number }>;
+        const shortCount = results?.[0]?.result ?? 0;
+        const shortTtl = results?.[2]?.result ?? shortSeconds;
+        const dailyCount = results?.[3]?.result ?? 0;
+        const dailyTtl = results?.[5]?.result ?? dailySeconds;
+
+        if (shortCount > shortMax) {
+          const retryAfter = shortTtl > 0 ? shortTtl : shortSeconds;
+          return { limited: true, retryAfter, reason: "short" };
         }
+
+        if (dailyCount > dailyMax) {
+          const retryAfter = dailyTtl > 0 ? dailyTtl : dailySeconds;
+          return { limited: true, retryAfter, reason: "daily" };
+        }
+
+        return { limited: false, retryAfter: 0 };
       }
     } catch (err) {
-      // If Upstash Redis is unreachable, fail open to in-memory fallback without crashing
-      console.warn("Upstash Redis rate limit check failed, falling back to memory:", sanitizeErrorMessage(err));
+      console.warn(
+        "Upstash Redis rate limit check failed, falling back to memory store:",
+        sanitizeErrorMessage(err)
+      );
     }
   }
 
-  return isRateLimited(ip, windowMs, maxRequests);
+  return isRateLimited(ip, now, shortWindowMs, shortMax, dailyWindowMs, dailyMax);
 }
 
+// ============================================================================
+// Cloudflare Turnstile Bot Challenge Verification
+// ============================================================================
+export interface TurnstileVerificationResult {
+  success: boolean;
+  bypassed?: boolean;
+  error?: string;
+}
+
+/**
+ * Verifies Cloudflare Turnstile bot verification token with Cloudflare's Siteverify API.
+ * If TURNSTILE_SECRET_KEY is not configured, gracefully bypasses verification to avoid breaking the form.
+ */
+export async function verifyTurnstileToken(
+  token?: string,
+  clientIp?: string,
+  secretKey?: string
+): Promise<TurnstileVerificationResult> {
+  const secret = secretKey ?? process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    // Turnstile is optional / unconfigured; bypass verification
+    return { success: true, bypassed: true };
+  }
+
+  if (!token || !token.trim()) {
+    return {
+      success: false,
+      error: "Bot verification challenge was not completed. Please try again.",
+    };
+  }
+
+  try {
+    const formData = new URLSearchParams();
+    formData.append("secret", secret);
+    formData.append("response", token.trim());
+    if (clientIp && clientIp !== "anonymous") {
+      formData.append("remoteip", clientIp);
+    }
+
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: "Verification service temporarily unavailable. Please try again.",
+      };
+    }
+
+    const data = (await res.json()) as {
+      success: boolean;
+      "error-codes"?: string[];
+    };
+
+    if (!data.success) {
+      return {
+        success: false,
+        error: "Bot verification failed or expired. Please refresh and try again.",
+      };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("Turnstile verification error:", sanitizeErrorMessage(err, secret));
+    return {
+      success: false,
+      error: "Unable to verify bot challenge. Please check your connection and try again.",
+    };
+  }
+}
+
+// ============================================================================
+// Idempotency & Duplicate Submission Protection
+// Prevents duplicate emails when users double-click or network re-posts occur
+// ============================================================================
+const recentSubmissions = new Map<string, { timestamp: number; id: string }>();
+const IDEMPOTENCY_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+
+export function createSubmissionHash(
+  ip: string,
+  name: string,
+  email: string,
+  message: string
+): string {
+  const str = `${ip.trim()}|${name.trim()}|${email.trim().toLowerCase()}|${message.trim()}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return String(hash);
+}
+
+export function resetIdempotencyStore(): void {
+  recentSubmissions.clear();
+}
+
+// ============================================================================
+// Contact Service Layer
+// ============================================================================
 export interface ContactServiceResult {
   status: number;
+  retryAfter?: number;
   data: {
     success: boolean;
     message?: string;
@@ -309,17 +486,25 @@ export interface ContactServiceOptions {
   apiKey?: string;
   toEmail?: string;
   fromEmail?: string;
+  turnstileSecretKey?: string;
   clientIp?: string;
   contentLength?: number;
   resendClient?: ResendLikeClient;
-  rateLimitCheck?: (ip: string) => Promise<boolean> | boolean;
+  rateLimitCheck?: (ip: string) => Promise<RateLimitResult> | RateLimitResult;
+  turnstileVerifier?: (
+    token?: string,
+    clientIp?: string,
+    secret?: string
+  ) => Promise<TurnstileVerificationResult>;
 }
 
 export async function processContactSubmission(
   body: unknown,
   options: ContactServiceOptions = {}
 ): Promise<ContactServiceResult> {
-  // 1. Content-Length check
+  const ip = options.clientIp || "anonymous";
+
+  // 1. Content-Length check (> 64KB rejected with 413)
   if (options.contentLength && options.contentLength > 65536) {
     return {
       status: 413,
@@ -330,16 +515,16 @@ export async function processContactSubmission(
     };
   }
 
-  // 2. Client IP rate limiting
-  const ip = options.clientIp || "anonymous";
+  // 2. Client IP rate limiting (5 per 10min, 20 per day)
   const rateLimitCheckFn = options.rateLimitCheck ?? checkRateLimit;
-  const isBlocked = await rateLimitCheckFn(ip);
-  if (isBlocked) {
+  const rateLimitResult = await rateLimitCheckFn(ip);
+  if (rateLimitResult.limited) {
     return {
       status: 429,
+      retryAfter: rateLimitResult.retryAfter,
       data: {
         success: false,
-        error: "Too many requests. Please wait a few minutes before sending another message.",
+        error: "Too many requests. Please wait a while before sending another message.",
       },
     };
   }
@@ -364,9 +549,9 @@ export async function processContactSubmission(
     };
   }
 
-  const { name, email, subject, message, _hp } = parseResult.data;
+  const { name, email, subject, message, _hp, turnstileToken } = parseResult.data;
 
-  // 4. Honeypot check: If filled, silently accept without dispatching email
+  // 4. Honeypot check: If filled, silently accept with 200 without dispatching email
   if (_hp && _hp.trim().length > 0) {
     return {
       status: 200,
@@ -377,7 +562,39 @@ export async function processContactSubmission(
     };
   }
 
-  // 5. Config check
+  // 5. Cloudflare Turnstile Verification (if configured)
+  const turnstileVerifierFn = options.turnstileVerifier ?? verifyTurnstileToken;
+  const turnstileRes = await turnstileVerifierFn(
+    turnstileToken,
+    ip,
+    options.turnstileSecretKey
+  );
+  if (!turnstileRes.success) {
+    return {
+      status: 400,
+      data: {
+        success: false,
+        error: turnstileRes.error || "Bot verification failed.",
+      },
+    };
+  }
+
+  // 6. Idempotency Check (prevent duplicate sends within 2 minutes)
+  const submissionHash = createSubmissionHash(ip, name, email, message);
+  const now = Date.now();
+  const cached = recentSubmissions.get(submissionHash);
+  if (cached && now - cached.timestamp < IDEMPOTENCY_WINDOW_MS) {
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: "Thank you! Your message has been sent successfully. I will get back to you soon.",
+        id: cached.id,
+      },
+    };
+  }
+
+  // 7. Config check
   const apiKey = options.apiKey ?? process.env.RESEND_API_KEY;
   const toEmail = options.toEmail ?? process.env.CONTACT_EMAIL;
   const fromEmail =
@@ -386,9 +603,7 @@ export async function processContactSubmission(
     "Portfolio Contact <onboarding@resend.dev>";
 
   if (!apiKey || !toEmail) {
-    console.error(
-      "Contact form error: RESEND_API_KEY or CONTACT_EMAIL is missing."
-    );
+    console.error("Contact form error: RESEND_API_KEY or CONTACT_EMAIL is missing.");
     return {
       status: 500,
       data: {
@@ -398,10 +613,10 @@ export async function processContactSubmission(
     };
   }
 
-  // 6. Format email
+  // 8. Format email
   const formatted = formatContactEmail({ name, email, subject, message });
 
-  // 7. Send email via Resend
+  // 9. Send email via Resend
   try {
     const resend = options.resendClient ?? (new Resend(apiKey) as unknown as ResendLikeClient);
     const { data: resendData, error: resendError } = await resend.emails.send({
@@ -414,10 +629,7 @@ export async function processContactSubmission(
     });
 
     if (resendError) {
-      console.error(
-        "Resend API error:",
-        sanitizeErrorMessage(resendError, apiKey)
-      );
+      console.error("Resend API error:", sanitizeErrorMessage(resendError, apiKey));
       return {
         status: 502,
         data: {
@@ -427,19 +639,24 @@ export async function processContactSubmission(
       };
     }
 
+    const messageId = resendData?.id || "sent";
+
+    // Cache successful submission for idempotency
+    recentSubmissions.set(submissionHash, {
+      timestamp: now,
+      id: messageId,
+    });
+
     return {
       status: 200,
       data: {
         success: true,
         message: "Thank you! Your message has been sent successfully. I will get back to you soon.",
-        id: resendData?.id,
+        id: messageId,
       },
     };
   } catch (error) {
-    console.error(
-      "Unhandled Resend exception:",
-      sanitizeErrorMessage(error, apiKey)
-    );
+    console.error("Unhandled Resend exception:", sanitizeErrorMessage(error, apiKey));
     return {
       status: 500,
       data: {

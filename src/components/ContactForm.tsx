@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useId } from "react";
+import { useState, useId, useEffect } from "react";
 
 interface FormState {
   name: string;
@@ -20,6 +20,7 @@ const INITIAL_FORM: FormState = {
 
 export default function ContactForm() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -30,6 +31,69 @@ export default function ContactForm() {
   const subjectId = useId();
   const messageId = useId();
   const hpId = useId();
+  const turnstileContainerId = useId();
+
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  // Optional Cloudflare Turnstile integration
+  useEffect(() => {
+    if (!turnstileSiteKey || typeof window === "undefined") return;
+
+    let widgetId: string | undefined;
+
+    const renderWidget = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cf = (window as any).turnstile;
+      const el = document.getElementById(turnstileContainerId);
+      if (cf && el) {
+        try {
+          widgetId = cf.render(el, {
+            sitekey: turnstileSiteKey,
+            callback: (token: string) => {
+              setTurnstileToken(token);
+            },
+            "expired-callback": () => {
+              setTurnstileToken("");
+            },
+            "error-callback": () => {
+              setTurnstileToken("");
+            },
+            theme: "auto",
+          });
+        } catch {
+          // ignore duplicate render attempt
+        }
+      }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).turnstile) {
+      renderWidget();
+    } else {
+      const scriptId = "cf-turnstile-script";
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.defer = true;
+        script.onload = renderWidget;
+        document.head.appendChild(script);
+      }
+    }
+
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cf = (window as any).turnstile;
+      if (widgetId && cf) {
+        try {
+          cf.remove(widgetId);
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+    };
+  }, [turnstileSiteKey, turnstileContainerId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -83,7 +147,10 @@ export default function ContactForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          turnstileToken: turnstileToken || undefined,
+        }),
       });
 
       const data = await response.json().catch(() => null);
@@ -93,9 +160,17 @@ export default function ContactForm() {
         if (data?.fieldErrors) {
           setFieldErrors(data.fieldErrors);
         }
+
+        // Check if rate limited with Retry-After header
+        const retryAfter = response.headers.get("Retry-After");
+        const rateLimitNotice = retryAfter
+          ? ` (Please wait ${Math.ceil(parseInt(retryAfter, 10) / 60)} minutes before trying again.)`
+          : "";
+
         setGeneralError(
-          data?.error ||
-            "Unable to deliver your message at this time. Please try again or reach out by email."
+          (data?.error ||
+            "Unable to deliver your message at this time. Please try again or reach out by email.") +
+            rateLimitNotice
         );
         return;
       }
@@ -107,6 +182,7 @@ export default function ContactForm() {
           "Thank you! Your message has been sent successfully. I will get back to you soon."
       );
       setForm(INITIAL_FORM);
+      setTurnstileToken("");
     } catch {
       setStatus("error");
       setGeneralError(
@@ -121,6 +197,7 @@ export default function ContactForm() {
     setGeneralError(null);
     setFieldErrors({});
     setForm(INITIAL_FORM);
+    setTurnstileToken("");
   };
 
   if (status === "success") {
@@ -323,6 +400,11 @@ export default function ContactForm() {
           </p>
         )}
       </div>
+
+      {/* Optional Turnstile Container */}
+      {turnstileSiteKey && (
+        <div id={turnstileContainerId} className="pt-1 min-h-[65px]" />
+      )}
 
       {/* Submit Button */}
       <div className="pt-2">
