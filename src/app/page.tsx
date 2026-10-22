@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { siteConfig, SITE_URL, SOCIAL_LINKS } from "@/lib/site";
 import { projects } from "@/data/projects";
 import ContactForm from "@/components/ContactForm";
+import PrivacyNotice from "@/components/PrivacyNotice";
 
 export const metadata: Metadata = {
   title: {
@@ -130,6 +131,7 @@ export default function Home() {
             </p>
           </div>
           <ContactForm />
+          <PrivacyNotice />
         </section>
       </div>
     </>

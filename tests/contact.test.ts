@@ -761,7 +761,7 @@ describe("Contact Form Success State Contract", () => {
     // Exact supporting text
     assert.match(
       componentCode,
-      /Thanks for reaching out. I&apos;ll get back to you as soon as I can./
+      /Thanks for reaching out. Your message has been sent successfully./
     );
 
     // Secondary reset action
@@ -773,6 +773,41 @@ describe("Contact Form Success State Contract", () => {
 
     // Direct email link preserved
     assert.match(componentCode, /mailto:abdulrahmonsulaimon60@gmail.com/);
+  });
+
+
+  it("verifies ContactForm configures Invisible Turnstile without reserved blank space", () => {
+    const componentCode = fs.readFileSync(path.resolve("src/components/ContactForm.tsx"), "utf8");
+
+    // Invisible mode configuration
+    assert.match(componentCode, /size:\s*"invisible"/);
+    assert.match(componentCode, /execution:\s*"execute"/);
+    assert.match(componentCode, /obtainTurnstileToken/);
+    assert.match(componentCode, /resetTurnstile/);
+
+    // No reserved blank space or visible height
+    assert.doesNotMatch(componentCode, /min-h-\[65px\]/);
+  });
+
+  it("verifies PrivacyNotice and Footer links are configured correctly without creating new pages", () => {
+    const privacyCode = fs.readFileSync(path.resolve("src/components/PrivacyNotice.tsx"), "utf8");
+    const footerCode = fs.readFileSync(path.resolve("src/components/Footer.tsx"), "utf8");
+    const pageCode = fs.readFileSync(path.resolve("src/app/page.tsx"), "utf8");
+
+    // Privacy notice content checks
+    assert.match(privacyCode, /id="privacy"/);
+    assert.match(privacyCode, /Resend/);
+    assert.match(privacyCode, /Vercel/);
+    assert.match(privacyCode, /Cloudflare Turnstile/);
+    assert.match(privacyCode, /https:\/\/www\.cloudflare\.com\/en-gb\/turnstile-privacy-policy\//);
+    assert.match(privacyCode, /abdulrahmonsulaimon60@gmail\.com/);
+
+    // Footer link
+    assert.match(footerCode, /href="\/#privacy"/);
+    assert.match(footerCode, /Privacy/);
+
+    // Home page renders PrivacyNotice
+    assert.match(pageCode, /<PrivacyNotice \/>/);
   });
 
   it("verifies globals.css defines entrance animation with prefers-reduced-motion support", () => {
