@@ -67,10 +67,11 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   icons: {
     icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/favicon.png", type: "image/png" },
       { url: "/favicon.ico", sizes: "any" },
     ],
-    apple: "/favicon.png",
+    apple: "/apple-icon.png",
   },
   alternates: {
     types: {
