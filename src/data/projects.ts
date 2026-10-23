@@ -34,18 +34,6 @@ export const projects: Project[] = [
     stack: ["Python", "AsyncIO", "Task Queues"],
   },
   {
-    title: "Async HTTP Retry Engine",
-    repoUrl: "https://github.com/abdulrahmontim/retry_engine",
-    description:
-      "A background worker service designed to ensure resilient network requests by handling temporary API failures gracefully.",
-    bullets: [
-      "Developed an exponential backoff algorithm to space out retries.",
-      "Integrated randomized jitter to prevent thundering herd problems on target servers.",
-      "Tracked task states persistently using SQLite for fault tolerance.",
-    ],
-    stack: ["FastAPI", "AsyncIO", "SQLite"],
-  },
-  {
     title: "Profile Intelligence Platform",
     repoUrl: "https://github.com/abdulrahmontim/profile-intelligence-api",
     description:
@@ -56,5 +44,29 @@ export const projects: Project[] = [
       "Secured endpoints using strict JWT authentication and role-based access control.",
     ],
     stack: ["Django", "PostgreSQL", "JWT"],
+  },
+  {
+    title: "CHIP-8 Emulator",
+    repoUrl: "https://github.com/abdulrahmontim/CHIP8-emulator",
+    description:
+      "A C++17 virtual machine emulator designed to execute CHIP-8 ROMs with a fetch-decode-execute CPU, SDL2 graphics and audio, and automated test coverage.",
+    bullets: [
+      "Implemented all 35 standard CHIP-8 opcodes with a cycle-accurate fetch-decode-execute CPU core.",
+      "Engineered SDL2 window rendering at 60 FPS alongside 60Hz delay and sound timers with audio generation.",
+      "Built an automated test suite verifying 85+ unit tests across opcodes, CPU reset states, and ROM parsing.",
+    ],
+    stack: ["C++17", "SDL2", "Emulation"],
+  },
+  {
+    title: "Async HTTP Retry Engine",
+    repoUrl: "https://github.com/abdulrahmontim/retry_engine",
+    description:
+      "A background worker service designed to ensure resilient network requests by handling temporary API failures gracefully.",
+    bullets: [
+      "Developed an exponential backoff algorithm to space out retries.",
+      "Integrated randomized jitter to prevent thundering herd problems on target servers.",
+      "Tracked task states persistently using SQLite for fault tolerance.",
+    ],
+    stack: ["FastAPI", "AsyncIO", "SQLite"],
   },
 ];
