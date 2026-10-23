@@ -57,4 +57,16 @@ export const projects: Project[] = [
     ],
     stack: ["Django", "PostgreSQL", "JWT"],
   },
+  {
+    title: "CHIP-8 Emulator",
+    repoUrl: "https://github.com/abdulrahmontim/CHIP8-emulator",
+    description:
+      "A C++17 virtual machine emulator designed to execute CHIP-8 ROMs with a fetch-decode-execute CPU, SDL2 graphics and audio, and automated test coverage.",
+    bullets: [
+      "Implemented all 35 standard CHIP-8 opcodes with a cycle-accurate fetch-decode-execute CPU core.",
+      "Engineered SDL2 window rendering at 60 FPS alongside 60Hz delay and sound timers with audio generation.",
+      "Built an automated test suite verifying 85+ unit tests across opcodes, CPU reset states, and ROM parsing.",
+    ],
+    stack: ["C++17", "SDL2", "Emulation"],
+  },
 ];
