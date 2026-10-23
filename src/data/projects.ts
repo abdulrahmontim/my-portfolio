@@ -34,18 +34,6 @@ export const projects: Project[] = [
     stack: ["Python", "AsyncIO", "Task Queues"],
   },
   {
-    title: "Async HTTP Retry Engine",
-    repoUrl: "https://github.com/abdulrahmontim/retry_engine",
-    description:
-      "A background worker service designed to ensure resilient network requests by handling temporary API failures gracefully.",
-    bullets: [
-      "Developed an exponential backoff algorithm to space out retries.",
-      "Integrated randomized jitter to prevent thundering herd problems on target servers.",
-      "Tracked task states persistently using SQLite for fault tolerance.",
-    ],
-    stack: ["FastAPI", "AsyncIO", "SQLite"],
-  },
-  {
     title: "Profile Intelligence Platform",
     repoUrl: "https://github.com/abdulrahmontim/profile-intelligence-api",
     description:
@@ -68,5 +56,17 @@ export const projects: Project[] = [
       "Built an automated test suite verifying 85+ unit tests across opcodes, CPU reset states, and ROM parsing.",
     ],
     stack: ["C++17", "SDL2", "Emulation"],
+  },
+  {
+    title: "Async HTTP Retry Engine",
+    repoUrl: "https://github.com/abdulrahmontim/retry_engine",
+    description:
+      "A background worker service designed to ensure resilient network requests by handling temporary API failures gracefully.",
+    bullets: [
+      "Developed an exponential backoff algorithm to space out retries.",
+      "Integrated randomized jitter to prevent thundering herd problems on target servers.",
+      "Tracked task states persistently using SQLite for fault tolerance.",
+    ],
+    stack: ["FastAPI", "AsyncIO", "SQLite"],
   },
 ];
