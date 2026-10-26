@@ -53,7 +53,7 @@ export default function Home() {
             I build scalable, production-grade backend systems with Python, FastAPI and Django.
           </p>
           <p className="text-base text-muted leading-[1.65]">
-            Python · FastAPI · Django · PostgreSQL · Redis · C/C++ · SQL
+            Python · FastAPI · Django · PostgreSQL · Redis · JavaScript · C++ · SQL
           </p>
           <div className="flex flex-wrap items-center gap-6 pt-2 text-base">
             <a
